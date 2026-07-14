@@ -22,5 +22,4 @@ xcuserdata/
 .env.*
 
 # Local beginner guide (not tracked)
-Docs/GUIDE.md
-docs/GUIDE.md
+docs/
