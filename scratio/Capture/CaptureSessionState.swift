@@ -32,6 +32,7 @@ final class CaptureSessionState {
         hoveredWindowID = nil
         selectedWindowID = nil
         hoveredWindowFrame = .zero
+        selectedDisplayID = nil
     }
 
     func setAspectRatio(_ ratio: AspectRatioOption) {

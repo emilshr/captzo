@@ -14,6 +14,7 @@ struct scratioApp: App {
         Window("Gallery", id: "gallery") {
             GalleryView(appState: appState)
                 .frame(minWidth: 720, minHeight: 480)
+                .registerWindowRouter()
         }
         .defaultSize(width: 960, height: 640)
         .handlesExternalEvents(matching: Set(arrayLiteral: "gallery"))
@@ -28,6 +29,7 @@ struct scratioApp: App {
 
         Settings {
             SettingsView()
+                .registerWindowRouter()
         }
     }
 }
@@ -59,10 +61,15 @@ private struct MenuBarContent: View {
         Button("Quit Scratio") {
             NSApp.terminate(nil)
         }
+        .onAppear {
+            WindowRouter.shared.register(openWindow)
+        }
     }
 
     private func presentGallery() {
-        appState.openGallery()
+        WindowRouter.shared.register(openWindow)
+        NSApp.setActivationPolicy(.regular)
+        NSApp.activate(ignoringOtherApps: true)
         openWindow(id: "gallery")
     }
 }
@@ -80,7 +87,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             object: nil,
             queue: .main
         ) { _ in
-            Self.openGalleryViaURL()
+            Task { @MainActor in
+                if WindowRouter.shared.openGallery() {
+                    NSApp.setActivationPolicy(.regular)
+                    NSApp.activate(ignoringOtherApps: true)
+                    return
+                }
+                // Fallback: external event opens the Window scene via URL scheme.
+                if let url = URL(string: "scratio://gallery") {
+                    NSWorkspace.shared.open(url)
+                }
+            }
         }
 
         NotificationCenter.default.addObserver(
@@ -107,17 +124,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func application(_ application: NSApplication, open urls: [URL]) {
-        for url in urls where url.host == "gallery" || url.absoluteString.contains("gallery") {
+        for url in urls {
+            guard url.scheme == "scratio", url.host == "gallery" else { continue }
             NSApp.setActivationPolicy(.regular)
             NSApp.activate(ignoringOtherApps: true)
-        }
-    }
-
-    static func openGalleryViaURL() {
-        NSApp.setActivationPolicy(.regular)
-        NSApp.activate(ignoringOtherApps: true)
-        if let url = URL(string: "scratio://gallery") {
-            NSWorkspace.shared.open(url)
+            Task { @MainActor in
+                _ = WindowRouter.shared.openGallery()
+            }
         }
     }
 }

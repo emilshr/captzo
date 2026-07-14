@@ -2,6 +2,12 @@ import AppKit
 import ScreenCaptureKit
 import SwiftUI
 
+/// Borderless panel that can become key so Esc/Return reach the local monitor.
+final class KeyablePanel: NSPanel {
+    override var canBecomeKey: Bool { true }
+    override var canBecomeMain: Bool { false }
+}
+
 @MainActor
 final class OverlayWindowController {
     private var overlayWindows: [NSWindow] = []
@@ -9,6 +15,8 @@ final class OverlayWindowController {
     private var keyMonitor: Any?
     private var mouseMonitor: Any?
     private var globalMouseMonitor: Any?
+    private var hoverTask: Task<Void, Never>?
+    private var hoverGeneration: UInt64 = 0
 
     private(set) var session = CaptureSessionState()
 
@@ -36,17 +44,21 @@ final class OverlayWindowController {
         for screen in NSScreen.screens {
             let window = makeOverlayWindow(for: screen)
             overlayWindows.append(window)
-            window.makeKeyAndOrderFront(nil)
+            window.orderFront(nil)
         }
 
         toolbarWindow = makeToolbarWindow(on: mainScreen)
         toolbarWindow?.orderFront(nil)
+        // Make one overlay key so Esc/Return are delivered reliably.
+        overlayWindows.first?.makeKeyAndOrderFront(nil)
 
         installMonitors()
         NSApp.activate(ignoringOtherApps: true)
     }
 
     func hide() {
+        hoverTask?.cancel()
+        hoverTask = nil
         removeMonitors()
         for window in overlayWindows {
             window.orderOut(nil)
@@ -61,7 +73,7 @@ final class OverlayWindowController {
     }
 
     private func makeOverlayWindow(for screen: NSScreen) -> NSWindow {
-        let window = NSPanel(
+        let window = KeyablePanel(
             contentRect: screen.frame,
             styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered,
@@ -92,7 +104,7 @@ final class OverlayWindowController {
             x: screen.frame.midX - size.width / 2,
             y: screen.frame.minY + 36
         )
-        let window = NSPanel(
+        let window = KeyablePanel(
             contentRect: NSRect(origin: origin, size: size),
             styleMask: [.borderless, .nonactivatingPanel],
             backing: .buffered,
@@ -155,38 +167,43 @@ final class OverlayWindowController {
     private func handleMouseMoved(_ event: NSEvent) {
         guard session.mode == .window else { return }
         let location = NSEvent.mouseLocation
-        Task { @MainActor in
-            await updateHoveredWindow(at: location)
+        scheduleHoverUpdate(at: location)
+    }
+
+    private func scheduleHoverUpdate(at location: NSPoint) {
+        hoverTask?.cancel()
+        hoverGeneration &+= 1
+        let generation = hoverGeneration
+        hoverTask = Task { @MainActor in
+            // Debounce rapid mouse moves before hitting SCShareableContent.
+            try? await Task.sleep(nanoseconds: 40_000_000)
+            guard !Task.isCancelled, generation == hoverGeneration else { return }
+            await updateHoveredWindow(at: location, generation: generation)
         }
     }
 
-    private func updateHoveredWindow(at location: NSPoint) async {
+    private func updateHoveredWindow(at location: NSPoint, generation: UInt64) async {
         do {
             let windows = try await ScreenshotCaptureService.fetchWindows()
-            // SCWindow.frame uses top-left global coords matching CGWindow; convert for hit test.
+            guard !Task.isCancelled, generation == hoverGeneration else { return }
+
+            // Frontmost-first list: first containing frame wins.
             let hit = windows.first { window in
-                let frame = convertSCWindowFrame(window.frame)
+                let frame = ScreenshotCaptureService.convertSCWindowFrameToAppKit(window.frame)
                 return frame.contains(location)
             }
+            guard generation == hoverGeneration else { return }
+
             session.hoveredWindowID = hit?.windowID
+            // Keep selected in sync with hover so highlight and capture stay aligned.
+            session.selectedWindowID = hit?.windowID
             if let hit {
-                session.hoveredWindowFrame = convertSCWindowFrame(hit.frame)
+                session.hoveredWindowFrame = ScreenshotCaptureService.convertSCWindowFrameToAppKit(hit.frame)
             } else {
                 session.hoveredWindowFrame = .zero
             }
         } catch {
             // Ignore hover failures during permission prompts
         }
-    }
-
-    /// Convert ScreenCaptureKit / CG window frame (top-left origin) to AppKit global (bottom-left).
-    private func convertSCWindowFrame(_ frame: CGRect) -> CGRect {
-        let primaryHeight = NSScreen.screens.map(\.frame.maxY).max() ?? 0
-        return CGRect(
-            x: frame.origin.x,
-            y: primaryHeight - frame.origin.y - frame.height,
-            width: frame.width,
-            height: frame.height
-        )
     }
 }

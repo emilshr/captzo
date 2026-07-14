@@ -75,6 +75,9 @@ final class HotkeyManager: @unchecked Sendable {
         } else {
             print("Hotkey registration failed with status \(status)")
             hotKeyRef = nil
+            DispatchQueue.main.async {
+                AppState.shared.statusMessage = "Hotkey unavailable (conflict or invalid shortcut)"
+            }
         }
     }
 

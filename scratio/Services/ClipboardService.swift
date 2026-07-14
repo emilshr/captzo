@@ -2,14 +2,16 @@ import AppKit
 import Foundation
 
 enum ClipboardService {
-    static func copy(_ image: NSImage) {
+    @discardableResult
+    static func copy(_ image: NSImage) -> Bool {
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
-        pasteboard.writeObjects([image])
+        return pasteboard.writeObjects([image])
     }
 
-    static func copy(contentsOf url: URL) {
-        guard let image = NSImage(contentsOf: url) else { return }
-        copy(image)
+    @discardableResult
+    static func copy(contentsOf url: URL) -> Bool {
+        guard let image = NSImage(contentsOf: url) else { return false }
+        return copy(image)
     }
 }

@@ -86,8 +86,11 @@ final class AppState {
     }
 
     func copyToClipboard(_ screenshot: CapturedScreenshot) {
-        ClipboardService.copy(contentsOf: screenshot.fileURL)
-        statusMessage = "Copied to clipboard"
+        if ClipboardService.copy(contentsOf: screenshot.fileURL) {
+            statusMessage = "Copied to clipboard"
+        } else {
+            statusMessage = "Failed to copy screenshot"
+        }
     }
 
     func openGallery() {
@@ -100,6 +103,10 @@ final class AppState {
             return
         }
         galleryOpenToken &+= 1
+        // Prefer the registered SwiftUI openWindow action when available.
+        if WindowRouter.shared.openGallery() {
+            return
+        }
         NotificationCenter.default.post(name: .openGalleryWindow, object: nil)
         if let url = URL(string: "scratio://gallery") {
             NSWorkspace.shared.open(url)

@@ -108,6 +108,8 @@ struct SettingsView: View {
 
     private func startRecording() {
         isRecordingHotkey = true
+        // Carbon hotkeys still fire while recording unless unregistered.
+        HotkeyManager.shared.unregister()
         monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { event in
             let flags = event.modifierFlags.intersection([.command, .shift, .option, .control])
             guard !flags.isEmpty else { return event }
@@ -124,16 +126,19 @@ struct SettingsView: View {
             AppPreferences.hotkeyModifiers = carbonMods
             refreshHotkey()
             reregister()
-            stopRecording()
+            stopRecording(reregisterIfNeeded: false)
             return nil
         }
     }
 
-    private func stopRecording() {
+    private func stopRecording(reregisterIfNeeded: Bool = true) {
         isRecordingHotkey = false
         if let monitor {
             NSEvent.removeMonitor(monitor)
             self.monitor = nil
+        }
+        if reregisterIfNeeded {
+            reregister()
         }
     }
 
