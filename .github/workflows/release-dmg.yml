@@ -1,0 +1,134 @@
+name: Release DMG
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build-dmg:
+    runs-on: macos-15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode.app
+
+      - name: Resolve version from tag
+        id: version
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          VERSION="${TAG#v}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Require release secrets
+        env:
+          BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
+          P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_API_KEY_P8: ${{ secrets.APP_STORE_CONNECT_API_KEY_P8 }}
+        run: |
+          missing=0
+          for name in BUILD_CERTIFICATE_BASE64 P12_PASSWORD KEYCHAIN_PASSWORD APPLE_TEAM_ID \
+            APP_STORE_CONNECT_API_KEY_ID APP_STORE_CONNECT_ISSUER_ID APP_STORE_CONNECT_API_KEY_P8; do
+            if [[ -z "${!name}" ]]; then
+              echo "error: missing secret $name" >&2
+              missing=1
+            fi
+          done
+          exit "$missing"
+
+      - name: Import Developer ID certificate
+        id: signing
+        env:
+          BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
+          P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          CERTIFICATE_PATH="$RUNNER_TEMP/build_certificate.p12"
+          KEYCHAIN_PATH="$RUNNER_TEMP/app-signing.keychain-db"
+          echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o "$CERTIFICATE_PATH"
+
+          PREV_LIST="$(security list-keychain -d user | sed 's/"//g' | tr '\n' ' ')"
+          echo "prev_keychains=$PREV_LIST" >> "$GITHUB_OUTPUT"
+          echo "keychain_path=$KEYCHAIN_PATH" >> "$GITHUB_OUTPUT"
+          echo "certificate_path=$CERTIFICATE_PATH" >> "$GITHUB_OUTPUT"
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security import "$CERTIFICATE_PATH" -P "$P12_PASSWORD" -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+          security list-keychain -d user -s "$KEYCHAIN_PATH" $PREV_LIST
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          IDENTITY="$(security find-identity -v -p codesigning "$KEYCHAIN_PATH" \
+            | awk -F'"' '/Developer ID Application/ { print $2; exit }')"
+          if [[ -z "$IDENTITY" ]]; then
+            echo "error: no Developer ID Application identity found after import" >&2
+            security find-identity -v -p codesigning "$KEYCHAIN_PATH" || true
+            exit 1
+          fi
+          if [[ "$IDENTITY" != *"$APPLE_TEAM_ID"* ]] && ! security find-identity -v -p codesigning "$KEYCHAIN_PATH" | grep -q "$APPLE_TEAM_ID"; then
+            echo "warning: identity '$IDENTITY' may not include team $APPLE_TEAM_ID; continuing with resolved identity"
+          fi
+          echo "codesign_identity=$IDENTITY" >> "$GITHUB_OUTPUT"
+          echo "Using identity: $IDENTITY"
+
+      - name: Run unit tests
+        run: |
+          xcodebuild test \
+            -scheme scratio \
+            -destination 'platform=macOS' \
+            -only-testing:scratioTests \
+            -derivedDataPath build/DerivedData
+
+      - name: Package DMG
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          CODE_SIGN_IDENTITY: ${{ steps.signing.outputs.codesign_identity }}
+        run: |
+          chmod +x scripts/package_dmg.sh scripts/notarize.sh
+          ./scripts/package_dmg.sh "${{ steps.version.outputs.version }}"
+
+      - name: Notarize DMG
+        env:
+          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+          APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          APP_STORE_CONNECT_API_KEY_P8: ${{ secrets.APP_STORE_CONNECT_API_KEY_P8 }}
+        run: ./scripts/notarize.sh "build/dmg/Scratio-${{ steps.version.outputs.version }}.dmg"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: Scratio ${{ steps.version.outputs.version }}
+          generate_release_notes: true
+          files: |
+            build/dmg/Scratio-${{ steps.version.outputs.version }}.dmg
+            build/dmg/Scratio-${{ steps.version.outputs.version }}.dmg.sha256
+
+      - name: Cleanup signing material
+        if: always()
+        env:
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+          PREV_LIST: ${{ steps.signing.outputs.prev_keychains }}
+          KEYCHAIN_PATH: ${{ steps.signing.outputs.keychain_path }}
+          CERTIFICATE_PATH: ${{ steps.signing.outputs.certificate_path }}
+        run: |
+          if [[ -n "${KEYCHAIN_PATH:-}" && -f "$KEYCHAIN_PATH" ]]; then
+            security delete-keychain "$KEYCHAIN_PATH" || true
+          fi
+          if [[ -n "${PREV_LIST:-}" ]]; then
+            # shellcheck disable=SC2086
+            security list-keychain -d user -s $PREV_LIST || true
+          fi
+          rm -f "${CERTIFICATE_PATH:-}"

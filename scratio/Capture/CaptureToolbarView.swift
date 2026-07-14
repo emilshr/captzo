@@ -5,6 +5,11 @@ struct CaptureToolbarView: View {
 
     var body: some View {
         HStack(spacing: 16) {
+            Image(systemName: "line.3.horizontal")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.45))
+                .help("Drag to move toolbar")
+
             modeButton(.window)
             modeButton(.display)
             modeButton(.selection)

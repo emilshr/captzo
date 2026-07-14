@@ -18,12 +18,17 @@ final class AppState {
         didSet { AppPreferences.aspectRatio = aspectRatio }
     }
 
-    var captureMode: CaptureMode = .selection
+    var captureMode: CaptureMode = AppPreferences.captureMode {
+        didSet { AppPreferences.captureMode = captureMode }
+    }
+
     var isCapturing = false
     var selectedScreenshot: CapturedScreenshot?
     var statusMessage: String?
     var showPermissionAlert = false
     var permissionAlertMessage = ""
+    /// True when Screen Recording is not granted — Gallery shows a persistent banner.
+    var needsScreenRecordingPermission = false
     /// Bumped to request the Gallery window from a SwiftUI scene that owns `openWindow`.
     var galleryOpenToken: Int = 0
 
@@ -31,20 +36,28 @@ final class AppState {
 
     private init() {
         reloadScreenshots()
+        refreshScreenRecordingPermission()
     }
 
     func reloadScreenshots() {
         screenshots = ScreenshotStore.shared.listScreenshots(sortOrder: sortOrder)
     }
 
+    func refreshScreenRecordingPermission() {
+        needsScreenRecordingPermission = !ScreenshotCaptureService.hasScreenCaptureAccess()
+    }
+
     func startCapture() {
         guard !isCapturing else { return }
 
+        refreshScreenRecordingPermission()
         if !ScreenshotCaptureService.hasScreenCaptureAccess() {
             let granted = ScreenshotCaptureService.requestScreenCaptureAccess()
+            refreshScreenRecordingPermission()
             if !granted && !ScreenshotCaptureService.hasScreenCaptureAccess() {
                 permissionAlertMessage = ScreenshotCaptureService.CaptureError.permissionDenied.localizedDescription
                 showPermissionAlert = true
+                needsScreenRecordingPermission = true
                 return
             }
         }

@@ -40,6 +40,9 @@ struct GalleryView: View {
             }
         } detail: {
             VStack(spacing: 0) {
+                if appState.needsScreenRecordingPermission {
+                    permissionBanner
+                }
                 toolbar
                 Divider()
                 if appState.screenshots.isEmpty {
@@ -60,10 +63,53 @@ struct GalleryView: View {
         }
         .onAppear {
             appState.reloadScreenshots()
+            appState.refreshScreenRecordingPermission()
             NSApp.setActivationPolicy(.regular)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+            appState.refreshScreenRecordingPermission()
         }
         .onReceive(NotificationCenter.default.publisher(for: .openSettingsWindow)) { _ in
             openSettings()
+        }
+    }
+
+    private var permissionBanner: some View {
+        HStack(alignment: .top, spacing: 12) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .foregroundStyle(.orange)
+                .font(.title3)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Screen Recording permission required")
+                    .font(.headline)
+                Text("Without this permission the capture overlay cannot work. Enable Scratio in System Settings → Privacy & Security → Screen Recording.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer(minLength: 8)
+
+            Button("Open Settings") {
+                ScreenshotCaptureService.openScreenRecordingSettings()
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.small)
+
+            Button("Check Again") {
+                appState.refreshScreenRecordingPermission()
+                if appState.needsScreenRecordingPermission {
+                    _ = ScreenshotCaptureService.requestScreenCaptureAccess()
+                    appState.refreshScreenRecordingPermission()
+                }
+            }
+            .controlSize(.small)
+        }
+        .padding(12)
+        .background(Color.orange.opacity(0.12))
+        .overlay(alignment: .bottom) {
+            Divider()
         }
     }
 

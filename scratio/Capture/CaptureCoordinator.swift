@@ -98,11 +98,6 @@ final class CaptureCoordinator {
     }
 
     private func displayIDUnderMouse() -> CGDirectDisplayID {
-        let location = NSEvent.mouseLocation
-        let screen = NSScreen.screens.first { $0.frame.contains(location) } ?? NSScreen.main
-        if let num = screen?.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber {
-            return CGDirectDisplayID(num.uint32Value)
-        }
-        return CGMainDisplayID()
+        CaptureSessionState.displayID(at: NSEvent.mouseLocation)
     }
 }

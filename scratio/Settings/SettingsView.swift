@@ -80,6 +80,7 @@ struct SettingsView: View {
 
                 Button("Request Permission") {
                     _ = ScreenshotCaptureService.requestScreenCaptureAccess()
+                    AppState.shared.refreshScreenRecordingPermission()
                 }
             }
 
@@ -101,6 +102,9 @@ struct SettingsView: View {
         .formStyle(.grouped)
         .padding()
         .frame(width: 520, height: 420)
+        .onAppear {
+            AppState.shared.refreshScreenRecordingPermission()
+        }
         .onDisappear {
             stopRecording()
         }
