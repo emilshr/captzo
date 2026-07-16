@@ -1,6 +1,7 @@
+import AppKit
 import SwiftUI
 
-/// Dotted box sized to match an aspect ratio for menu rows and badges.
+/// Solid outline box sized to match an aspect ratio for menu rows and badges.
 struct AspectRatioGlyph: View {
     let option: AspectRatioOption
     var size: CGFloat = 18
@@ -8,19 +9,40 @@ struct AspectRatioGlyph: View {
 
     var body: some View {
         Canvas { context, canvasSize in
-            let rect = glyphRect(in: canvasSize)
+            let rect = Self.glyphRect(for: option, in: canvasSize)
             let path = Path(roundedRect: rect, cornerRadius: 2)
             context.stroke(
                 path,
-                with: .color(color.opacity(0.85)),
-                style: StrokeStyle(lineWidth: 1.25, dash: [2.5, 2])
+                with: .color(color.opacity(0.9)),
+                style: StrokeStyle(lineWidth: 1.5, lineCap: .round, lineJoin: .round)
             )
         }
         .frame(width: size, height: size)
         .accessibilityHidden(true)
     }
 
-    private func glyphRect(in canvasSize: CGSize) -> CGRect {
+    /// AppKit image for macOS `Menu` rows, which often drop custom SwiftUI `Canvas` icons.
+    static func nsImage(
+        option: AspectRatioOption,
+        size: CGFloat = 16,
+        color: NSColor? = nil
+    ) -> NSImage {
+        let pixelSize = NSSize(width: size, height: size)
+        return NSImage(size: pixelSize, flipped: false) { _ in
+            let stroke = color ?? NSColor.labelColor
+            stroke.withAlphaComponent(0.9).setStroke()
+
+            let rect = glyphRect(for: option, in: CGSize(width: size, height: size))
+            let path = NSBezierPath(roundedRect: rect, xRadius: 2, yRadius: 2)
+            path.lineWidth = 1.5
+            path.lineCapStyle = .round
+            path.lineJoinStyle = .round
+            path.stroke()
+            return true
+        }
+    }
+
+    static func glyphRect(for option: AspectRatioOption, in canvasSize: CGSize) -> CGRect {
         let inset: CGFloat = 1.5
         let available = CGSize(
             width: canvasSize.width - inset * 2,
@@ -62,5 +84,12 @@ struct AspectRatioGlyph: View {
             width: fitted.width,
             height: fitted.height
         )
+    }
+}
+
+extension AspectRatioOption {
+    var glyphNSColor: NSColor {
+        let hex = AppPreferences.badgeColorHex(for: self) ?? defaultBadgeColorHex
+        return NSColor(Color(hex: hex))
     }
 }

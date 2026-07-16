@@ -18,28 +18,27 @@ struct SelectionOverlayView: View {
 
     var body: some View {
         ZStack {
-                // Dim overlay with cutout for the active capture region.
-                // Hit-testing stays enabled in selection mode so the NSWindow
-                // receives mouse-down and local monitors can drive cross-screen drags.
-                DimCutoutShape(cutout: activeCutout)
-                    .fill(Color.black.opacity(0.45), style: FillStyle(eoFill: true))
+            // Dim overlay with cutout for the active capture region.
+            // Hit-testing stays enabled so the NSWindow receives mouse-down
+            // and local monitors can drive capture / selection interactions.
+            DimCutoutShape(cutout: activeCutout)
+                .fill(Color.black.opacity(0.45), style: FillStyle(eoFill: true))
 
-                if session.mode == .selection, localSelectionRect.width > 1 {
-                    selectionChrome
-                }
-
-                if session.mode == .window,
-                   session.hoveredWindowFrame != .zero,
-                   session.hoveredWindowFrame.intersects(screenFrame) {
-                    windowHighlight
-                }
-
-                if session.mode == .display, isSelectedDisplay {
-                    displayHighlight
-                }
+            if session.mode == .selection, localSelectionRect.width > 1 {
+                selectionChrome
             }
-            .contentShape(Rectangle())
-            .allowsHitTesting(session.mode != .display)
+
+            if session.mode == .window,
+               session.hoveredWindowFrame != .zero,
+               session.hoveredWindowFrame.intersects(screenFrame) {
+                windowHighlight
+            }
+
+            if session.mode == .display, isSelectedDisplay {
+                displayHighlight
+            }
+        }
+        .contentShape(Rectangle())
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .ignoresSafeArea()
     }

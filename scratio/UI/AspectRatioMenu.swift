@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 struct AspectRatioMenu: View {
@@ -84,7 +85,11 @@ struct AspectRatioMenu: View {
     private func menuRow(title: String, option: AspectRatioOption?, isSelected: Bool) -> some View {
         HStack {
             if let option {
-                AspectRatioGlyph(option: option, size: 16, color: option.badgeColor)
+                Image(nsImage: AspectRatioGlyph.nsImage(
+                    option: option,
+                    size: 16,
+                    color: option.glyphNSColor
+                ))
             } else {
                 Image(systemName: "square.dashed")
                     .frame(width: 16, height: 16)
