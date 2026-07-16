@@ -107,11 +107,37 @@
 		};
 /* End PBXGroup section */
 
+/* Begin PBXShellScriptBuildPhase section */
+		20BA4A623006581D00560FBA /* SwiftLint */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/.swiftlint.yml",
+				"$(SRCROOT)/.swiftlint.baseline",
+				"$(SRCROOT)/scratio",
+			);
+			name = SwiftLint;
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "export PATH=\"/opt/homebrew/bin:$PATH\"\nif command -v swiftlint >/dev/null; then\n  cd \"${SRCROOT}\"\n  swiftlint lint --strict --baseline .swiftlint.baseline scratio\nelse\n  echo \"warning: SwiftLint not installed; run brew install swiftlint.\"\nfi\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
 /* Begin PBXNativeTarget section */
 		20BA4A2A3006581C00560FBA /* scratio */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 20BA4A4C3006581D00560FBA /* Build configuration list for PBXNativeTarget "scratio" */;
 			buildPhases = (
+				20BA4A623006581D00560FBA /* SwiftLint */,
 				20BA4A273006581C00560FBA /* Sources */,
 				20BA4A283006581C00560FBA /* Frameworks */,
 				20BA4A293006581C00560FBA /* Resources */,
@@ -124,8 +150,6 @@
 				20BA4A2D3006581C00560FBA /* scratio */,
 			);
 			name = scratio;
-			packageProductDependencies = (
-			);
 			productName = scratio;
 			productReference = 20BA4A2B3006581C00560FBA /* scratio.app */;
 			productType = "com.apple.product-type.application";
@@ -319,7 +343,7 @@
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -382,7 +406,7 @@
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;

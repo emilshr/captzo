@@ -17,8 +17,7 @@ struct SelectionOverlayView: View {
     }
 
     var body: some View {
-        GeometryReader { _ in
-            ZStack {
+        ZStack {
                 // Dim overlay with cutout for the active capture region.
                 // Hit-testing stays enabled in selection mode so the NSWindow
                 // receives mouse-down and local monitors can drive cross-screen drags.
@@ -41,7 +40,7 @@ struct SelectionOverlayView: View {
             }
             .contentShape(Rectangle())
             .allowsHitTesting(session.mode != .display)
-        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .ignoresSafeArea()
     }
 

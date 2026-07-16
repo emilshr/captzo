@@ -10,7 +10,7 @@ final class AppState {
     var sortOrder: GallerySortOrder = AppPreferences.sortOrder {
         didSet {
             AppPreferences.sortOrder = sortOrder
-            reloadScreenshots()
+            Task { await reloadScreenshots() }
         }
     }
 
@@ -20,6 +20,14 @@ final class AppState {
 
     var captureMode: CaptureMode = AppPreferences.captureMode {
         didSet { AppPreferences.captureMode = captureMode }
+    }
+
+    var openGalleryAfterCapture: Bool = AppPreferences.openGalleryAfterCapture {
+        didSet { AppPreferences.openGalleryAfterCapture = openGalleryAfterCapture }
+    }
+
+    var clipboardToastMessage: String = AppPreferences.clipboardToastMessage {
+        didSet { AppPreferences.clipboardToastMessage = clipboardToastMessage }
     }
 
     var isCapturing = false
@@ -36,12 +44,26 @@ final class AppState {
     private let toastController = ToastWindowController()
 
     private init() {
-        reloadScreenshots()
+        Task { await reloadScreenshots() }
         refreshScreenRecordingPermission()
     }
 
-    func reloadScreenshots() {
-        screenshots = ScreenshotStore.shared.listScreenshots(sortOrder: sortOrder)
+    func reloadScreenshots() async {
+        screenshots = await ScreenshotStore.shared.listScreenshots(sortOrder: sortOrder)
+    }
+
+    var screenshotsFolderPath: String {
+        ScreenshotStore.shared.screenshotsDirectory.path
+    }
+
+    func revealInFinder(_ screenshot: CapturedScreenshot) {
+        ScreenshotStore.shared.revealInFinder(screenshot)
+    }
+
+    func revealScreenshotsFolderInFinder() {
+        NSWorkspace.shared.activateFileViewerSelecting([
+            ScreenshotStore.shared.screenshotsDirectory
+        ])
     }
 
     func refreshScreenRecordingPermission() {
@@ -109,7 +131,7 @@ final class AppState {
             if selectedScreenshot?.id == screenshot.id {
                 selectedScreenshot = nil
             }
-            reloadScreenshots()
+            Task { await reloadScreenshots() }
         } catch {
             statusMessage = error.localizedDescription
         }
@@ -157,7 +179,7 @@ final class AppState {
                 aspectRatio: ratio,
                 captureMode: mode
             )
-            reloadScreenshots()
+            await reloadScreenshots()
             if didCopy {
                 statusMessage = "Screenshot copied & saved"
                 showClipboardToast()

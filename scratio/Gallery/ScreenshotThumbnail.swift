@@ -42,7 +42,7 @@ struct ScreenshotThumbnail: View {
         }
         .contentShape(Rectangle())
         .task(id: screenshot.id) {
-            image = ScreenshotStore.shared.loadImage(for: screenshot)
+            image = await ScreenshotStore.shared.loadImage(for: screenshot)
         }
     }
 }

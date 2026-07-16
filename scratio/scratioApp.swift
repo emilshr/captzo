@@ -8,11 +8,13 @@ struct scratioApp: App {
 
     var body: some Scene {
         MenuBarExtra("Scratio", systemImage: "camera.viewfinder") {
-            MenuBarContent(appState: appState)
+            MenuBarContent()
+                .environment(appState)
         }
 
         Window("Gallery", id: "gallery") {
-            GalleryView(appState: appState)
+            GalleryView()
+                .environment(appState)
                 .frame(minWidth: 720, minHeight: 480)
                 .registerWindowRouter()
         }
@@ -30,6 +32,7 @@ struct scratioApp: App {
 
         Settings {
             SettingsView()
+                .environment(appState)
                 .registerWindowRouter()
         }
         .defaultSize(width: 520, height: 420)
@@ -38,11 +41,13 @@ struct scratioApp: App {
 }
 
 private struct MenuBarContent: View {
-    @Bindable var appState: AppState
+    @Environment(AppState.self) private var appState
     @Environment(\.openWindow) private var openWindow
     @Environment(\.openSettings) private var openSettings
 
     var body: some View {
+        @Bindable var appState = appState
+
         Button("New Capture") {
             appState.startCapture()
         }
@@ -64,7 +69,7 @@ private struct MenuBarContent: View {
         Button("Quit Scratio") {
             NSApp.terminate(nil)
         }
-        .onAppear {
+        .task {
             WindowRouter.shared.register(openWindow)
         }
     }
