@@ -128,7 +128,8 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "export PATH=\"/opt/homebrew/bin:$PATH\"\nif command -v swiftlint >/dev/null; then\n  cd \"${SRCROOT}\"\n  swiftlint lint --strict --baseline .swiftlint.baseline scratio\nelse\n  echo \"warning: SwiftLint not installed; run brew install swiftlint.\"\nfi\n";
+			shellScript = "export PATH=\"/opt/homebrew/bin:$PATH\"\nif [ -x \"${SRCROOT}/scripts/swiftlint.sh\" ]; then\n  \"${SRCROOT}/scripts/swiftlint.sh\"\nelif command -v swiftlint >/dev/null; then\n  echo \"warning: scripts/swiftlint.sh missing; falling back to swiftlint without portable baseline.\"\n  cd \"${SRCROOT}\"\n  swiftlint lint --strict scratio\nelse\n  echo \"warning: SwiftLint not installed; run brew install swiftlint.\"\nfi\n";
+			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
 
