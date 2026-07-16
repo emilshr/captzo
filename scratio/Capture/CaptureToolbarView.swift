@@ -3,44 +3,48 @@ import SwiftUI
 struct CaptureToolbarView: View {
     @Bindable var session: CaptureSessionState
 
+    private static let controlHeight: CGFloat = 36
+    private static let controlCorner: CGFloat = 7
+    private static let quickAspectRatios: [AspectRatioOption] = [
+        .oneToOne,
+        .sixteenToNine,
+        .nineToSixteen
+    ]
+
     var body: some View {
         scratioGlassContainer(spacing: 16) {
-            HStack(spacing: 16) {
+            HStack(spacing: 12) {
                 Image(systemName: "line.3.horizontal")
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(.white.opacity(0.45))
+                    .frame(width: 20, height: Self.controlHeight)
+                    .contentShape(Rectangle())
                     .help("Drag to move toolbar")
                     .appKitTooltip("Drag to move toolbar")
 
-                modeButton(.window)
-                modeButton(.display)
-                modeButton(.selection)
+                segmentTrack {
+                    modeButton(.window)
+                    modeButton(.display)
+                    modeButton(.selection)
+                }
 
                 Divider()
-                    .frame(height: 28)
+                    .frame(height: Self.controlHeight - 4)
 
-                Menu {
-                    ForEach(AspectRatioOption.allCases) { option in
-                        Button {
-                            session.setAspectRatio(option)
-                        } label: {
-                            HStack {
-                                Text(option.displayName)
-                                if session.aspectRatio == option {
-                                    Image(systemName: "checkmark")
-                                }
-                            }
-                        }
+                segmentTrack {
+                    ForEach(Self.quickAspectRatios) { option in
+                        aspectRatioQuickToggle(option)
                     }
-                } label: {
-                    Label(session.aspectRatio.displayName, systemImage: "aspectratio")
-                        .labelStyle(.titleAndIcon)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 8)
-                        .background(Color.white.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
                 }
-                .menuStyle(.borderlessButton)
-                .disabled(session.mode != .selection)
+
+                AspectRatioMenu(
+                    selection: Binding(
+                        get: { session.aspectRatio },
+                        set: { session.setAspectRatio($0) }
+                    ),
+                    labelStyle: .compact,
+                    isDisabled: session.mode != .selection
+                )
                 .help("Aspect ratio (selection mode)")
                 .appKitTooltip("Aspect ratio (selection mode)")
 
@@ -54,6 +58,7 @@ struct CaptureToolbarView: View {
                         .foregroundStyle(.white)
                         .frame(width: 40, height: 40)
                         .background(Color.accentColor, in: Circle())
+                        .contentShape(Circle())
                 }
                 .buttonStyle(.plain)
                 .help("Capture")
@@ -65,8 +70,9 @@ struct CaptureToolbarView: View {
                     Image(systemName: "xmark")
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundStyle(.white.opacity(0.9))
-                        .frame(width: 32, height: 32)
+                        .frame(width: 36, height: 36)
                         .background(Color.white.opacity(0.12), in: Circle())
+                        .contentShape(Circle())
                 }
                 .buttonStyle(.plain)
                 .help("Cancel (Esc)")
@@ -83,24 +89,68 @@ struct CaptureToolbarView: View {
         }
     }
 
+    private func segmentTrack<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        HStack(spacing: 2) {
+            content()
+        }
+        .padding(3)
+        .background(Color.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 10))
+    }
+
     @ViewBuilder
     private func modeButton(_ mode: CaptureMode) -> some View {
+        let isSelected = session.mode == mode
+        let shape = RoundedRectangle(cornerRadius: Self.controlCorner, style: .continuous)
         Button {
             session.setMode(mode)
         } label: {
             Image(systemName: mode.systemImage)
                 .font(.system(size: 15, weight: .medium))
-                .foregroundStyle(session.mode == mode ? Color.accentColor : Color.white.opacity(0.85))
-                .frame(width: 36, height: 36)
+                .foregroundStyle(isSelected ? Color.accentColor : Color.white.opacity(0.85))
+                .frame(width: Self.controlHeight, height: Self.controlHeight)
                 .background(
-                    session.mode == mode
-                        ? Color.white.opacity(0.18)
-                        : Color.clear,
-                    in: RoundedRectangle(cornerRadius: 8)
+                    isSelected ? Color.white.opacity(0.2) : Color.clear,
+                    in: shape
                 )
+                .contentShape(shape)
         }
         .buttonStyle(.plain)
         .help(mode.title)
         .appKitTooltip(mode.title)
+    }
+
+    @ViewBuilder
+    private func aspectRatioQuickToggle(_ option: AspectRatioOption) -> some View {
+        let isSelected = session.aspectRatio == option
+        let isEnabled = session.mode == .selection
+        let shape = RoundedRectangle(cornerRadius: Self.controlCorner, style: .continuous)
+        Button {
+            session.setAspectRatio(option)
+        } label: {
+            HStack(spacing: 5) {
+                AspectRatioGlyph(
+                    option: option,
+                    size: 14,
+                    color: isSelected ? Color.accentColor : Color.white.opacity(0.85)
+                )
+                Text(option.displayName)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(isSelected ? Color.accentColor : Color.white.opacity(0.85))
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
+            }
+            .padding(.horizontal, 10)
+            .frame(height: Self.controlHeight)
+            .background(
+                isSelected ? Color.white.opacity(0.2) : Color.clear,
+                in: shape
+            )
+            .contentShape(shape)
+        }
+        .buttonStyle(.plain)
+        .disabled(!isEnabled)
+        .opacity(isEnabled ? 1 : 0.4)
+        .help(option.displayName)
+        .appKitTooltip(option.displayName)
     }
 }

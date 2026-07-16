@@ -46,10 +46,13 @@ final class CaptureCoordinator {
         let session = overlay.session
         let mode = session.mode
         let ratio = session.aspectRatio
-        // Prefer live hover over a stale tap so the highlight matches the shot.
-        let windowID = session.hoveredWindowID ?? session.selectedWindowID
-        let displayID = session.selectedDisplayID
+        let windowID = session.pointer.hoveredWindowID ?? session.pointer.selectedWindowID
+        let displayID = session.pointer.selectedDisplayID
         let selectionRect = session.selectionRect
+
+        guard canStartCapture(mode: mode, windowID: windowID, selectionRect: selectionRect) else {
+            return
+        }
 
         overlay.hide()
 
@@ -59,25 +62,12 @@ final class CaptureCoordinator {
             guard !Task.isCancelled else { return }
 
             do {
-                let image: NSImage
-                switch mode {
-                case .selection:
-                    guard selectionRect.width > 2, selectionRect.height > 2 else {
-                        cancelHandler?()
-                        return
-                    }
-                    image = try await ScreenshotCaptureService.captureRegion(selectionRect)
-                case .window:
-                    guard let windowID else {
-                        cancelHandler?()
-                        return
-                    }
-                    image = try await ScreenshotCaptureService.captureWindow(windowID: windowID)
-                case .display:
-                    let id = displayID ?? displayIDUnderMouse()
-                    image = try await ScreenshotCaptureService.captureDisplay(id)
-                }
-
+                let image = try await captureImage(
+                    mode: mode,
+                    windowID: windowID,
+                    displayID: displayID,
+                    selectionRect: selectionRect
+                )
                 guard !Task.isCancelled else { return }
                 await captureHandler?(image, mode, ratio)
             } catch is CancellationError {
@@ -88,6 +78,41 @@ final class CaptureCoordinator {
                 presentCaptureError(mapped)
                 cancelHandler?()
             }
+        }
+    }
+
+    private func canStartCapture(
+        mode: CaptureMode,
+        windowID: CGWindowID?,
+        selectionRect: CGRect
+    ) -> Bool {
+        switch mode {
+        case .window:
+            return windowID != nil
+        case .selection:
+            return selectionRect.width > 2 && selectionRect.height > 2
+        case .display:
+            return true
+        }
+    }
+
+    private func captureImage(
+        mode: CaptureMode,
+        windowID: CGWindowID?,
+        displayID: CGDirectDisplayID?,
+        selectionRect: CGRect
+    ) async throws -> NSImage {
+        switch mode {
+        case .selection:
+            return try await ScreenshotCaptureService.captureRegion(selectionRect)
+        case .window:
+            guard let windowID else {
+                throw ScreenshotCaptureService.CaptureError.captureFailed("No window selected.")
+            }
+            return try await ScreenshotCaptureService.captureWindow(windowID: windowID)
+        case .display:
+            let id = displayID ?? displayIDUnderMouse()
+            return try await ScreenshotCaptureService.captureDisplay(id)
         }
     }
 

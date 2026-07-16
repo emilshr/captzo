@@ -13,33 +13,32 @@ struct SelectionOverlayView: View {
 
     private var isSelectedDisplay: Bool {
         guard let screenDisplayID else { return false }
-        return session.selectedDisplayID == screenDisplayID
+        return session.pointer.selectedDisplayID == screenDisplayID
     }
 
     var body: some View {
         ZStack {
-                // Dim overlay with cutout for the active capture region.
-                // Hit-testing stays enabled in selection mode so the NSWindow
-                // receives mouse-down and local monitors can drive cross-screen drags.
-                DimCutoutShape(cutout: activeCutout)
-                    .fill(Color.black.opacity(0.45), style: FillStyle(eoFill: true))
+            // Dim overlay with cutout for the active capture region.
+            // Hit-testing stays enabled so the NSWindow receives mouse-down
+            // and local monitors can drive capture / selection interactions.
+            DimCutoutShape(cutout: activeCutout)
+                .fill(Color.black.opacity(0.45), style: FillStyle(eoFill: true))
 
-                if session.mode == .selection, localSelectionRect.width > 1 {
-                    selectionChrome
-                }
-
-                if session.mode == .window,
-                   session.hoveredWindowFrame != .zero,
-                   session.hoveredWindowFrame.intersects(screenFrame) {
-                    windowHighlight
-                }
-
-                if session.mode == .display, isSelectedDisplay {
-                    displayHighlight
-                }
+            if session.mode == .selection, localSelectionRect.width > 1 {
+                selectionChrome
             }
-            .contentShape(Rectangle())
-            .allowsHitTesting(session.mode != .display)
+
+            if session.mode == .window,
+               session.pointer.hoveredWindowFrame != .zero,
+               session.pointer.hoveredWindowFrame.intersects(screenFrame) {
+                windowHighlight
+            }
+
+            if session.mode == .display, isSelectedDisplay {
+                displayHighlight
+            }
+        }
+        .contentShape(Rectangle())
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .ignoresSafeArea()
     }
@@ -53,11 +52,11 @@ struct SelectionOverlayView: View {
         case .selection:
             return localSelectionRect
         case .window:
-            guard session.hoveredWindowFrame != .zero,
-                  session.hoveredWindowFrame.intersects(screenFrame) else {
+            guard session.pointer.hoveredWindowFrame != .zero,
+                  session.pointer.hoveredWindowFrame.intersects(screenFrame) else {
                 return .zero
             }
-            return toLocal(session.hoveredWindowFrame)
+            return toLocal(session.pointer.hoveredWindowFrame)
         case .display:
             // Clear cutout only on the hovered/selected display; others stay dimmed.
             return isSelectedDisplay
@@ -117,7 +116,7 @@ struct SelectionOverlayView: View {
     }
 
     private var windowHighlight: some View {
-        let local = toLocal(session.hoveredWindowFrame)
+        let local = toLocal(session.pointer.hoveredWindowFrame)
         return Rectangle()
             .strokeBorder(Color.accentColor, lineWidth: 3)
             .background(Color.accentColor.opacity(0.08))

@@ -7,7 +7,7 @@ struct scratioApp: App {
     @State private var appState = AppState.shared
 
     var body: some Scene {
-        MenuBarExtra("Scratio", systemImage: "camera.viewfinder") {
+        MenuBarExtra("Captzo", systemImage: "camera.viewfinder") {
             MenuBarContent()
                 .environment(appState)
         }
@@ -35,7 +35,7 @@ struct scratioApp: App {
                 .environment(appState)
                 .registerWindowRouter()
         }
-        .defaultSize(width: 520, height: 420)
+        .defaultSize(width: 560, height: 520)
         .windowResizability(.contentMinSize)
     }
 }
@@ -66,7 +66,7 @@ private struct MenuBarContent: View {
 
         Divider()
 
-        Button("Quit Scratio") {
+        Button("Quit Captzo") {
             NSApp.terminate(nil)
         }
         .task {
@@ -113,7 +113,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                     return
                 }
                 // Fallback: external event opens the Window scene via URL scheme.
-                if let url = URL(string: "scratio://gallery") {
+                if let url = URL(string: "captzo://gallery") {
                     NSWorkspace.shared.open(url)
                 }
             }
@@ -144,7 +144,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func application(_ application: NSApplication, open urls: [URL]) {
         for url in urls {
-            guard url.scheme == "scratio", url.host == "gallery" else { continue }
+            guard url.scheme == "captzo", url.host == "gallery" else { continue }
             NSApp.setActivationPolicy(.regular)
             NSApp.activate(ignoringOtherApps: true)
             Task { @MainActor in

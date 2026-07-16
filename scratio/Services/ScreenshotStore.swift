@@ -69,11 +69,12 @@ final class ScreenshotStore {
     private let fileManager = FileManager.default
 
     var screenshotsDirectory: URL {
+        Self.migrateLegacyStoreIfNeeded()
         guard let base = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
             fatalError("Application Support directory is unavailable.")
         }
         return base
-            .appendingPathComponent("scratio", isDirectory: true)
+            .appendingPathComponent("captzo", isDirectory: true)
             .appendingPathComponent("Screenshots", isDirectory: true)
     }
 
@@ -83,6 +84,19 @@ final class ScreenshotStore {
 
     private init() {
         try? ensureDirectories()
+    }
+
+    /// Moves `Application Support/scratio` → `captzo` once when upgrading.
+    private static func migrateLegacyStoreIfNeeded() {
+        let fileManager = FileManager.default
+        guard let base = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
+            return
+        }
+        let legacy = base.appendingPathComponent("scratio", isDirectory: true)
+        let current = base.appendingPathComponent("captzo", isDirectory: true)
+        guard fileManager.fileExists(atPath: legacy.path) else { return }
+        if fileManager.fileExists(atPath: current.path) { return }
+        try? fileManager.moveItem(at: legacy, to: current)
     }
 
     func ensureDirectories() throws {

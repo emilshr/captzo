@@ -7,14 +7,14 @@ import OSLog
 final class HotkeyManager: @unchecked Sendable {
     static let shared = HotkeyManager()
 
-    private static let logger = Logger(subsystem: "emilshr.scratio", category: "HotkeyManager")
+    private static let logger = Logger(subsystem: "emilshr.captzo", category: "HotkeyManager")
 
     private var hotKeyRef: EventHotKeyRef?
     private var eventHandler: EventHandlerRef?
     private var handler: (@MainActor () -> Void)?
     private let lock = NSLock()
 
-    private let hotKeyID = EventHotKeyID(signature: OSType(0x53435241), /* 'SCRA' */ id: 1)
+    private let hotKeyID = EventHotKeyID(signature: OSType(0x4341505A), /* 'CAPZ' */ id: 1)
 
     private init() {}
 

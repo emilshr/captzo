@@ -40,6 +40,62 @@ enum ScreenGeometry {
         return clampRect(r, to: nearest, minSize: minSize)
     }
 
+    /// Clamps while preserving `ratio` (width / height), scaling down to fit the target screen.
+    static func clampAspectLockedRect(
+        _ rect: CGRect,
+        ratio: CGFloat,
+        toScreens screens: [CGRect],
+        minSize: CGFloat = minimumSelectionSide
+    ) -> CGRect {
+        guard ratio > 0, !screens.isEmpty else {
+            return clampRect(rect, toScreens: screens, minSize: minSize)
+        }
+
+        let center = CGPoint(x: rect.midX, y: rect.midY)
+        let target = screens.first { $0.contains(center) }
+            ?? nearestScreen(to: center, in: screens)
+            ?? screens[0]
+
+        var width = max(rect.width, minSize)
+        var height = width / ratio
+        if height < minSize {
+            height = minSize
+            width = height * ratio
+        }
+
+        let maxWidth = max(minSize, target.width)
+        let maxHeight = max(minSize, target.height)
+        let scale = min(1, maxWidth / width, maxHeight / height)
+        width *= scale
+        height = width / ratio
+
+        var result = CGRect(
+            x: center.x - width / 2,
+            y: center.y - height / 2,
+            width: width,
+            height: height
+        )
+        result = clampRect(result, to: target, minSize: minSize)
+        // Re-assert aspect after origin clamp (size may have been min-clamped independently).
+        let fixedHeight = result.width / ratio
+        if abs(fixedHeight - result.height) > 0.5 {
+            result.size.height = fixedHeight
+            result = clampRect(result, to: target, minSize: minSize)
+            result.size.height = result.width / ratio
+            result.origin.y = min(
+                max(target.minY, result.origin.y),
+                target.maxY - result.size.height
+            )
+        }
+        return result
+    }
+
+    private static func nearestScreen(to point: CGPoint, in screens: [CGRect]) -> CGRect? {
+        screens.min { left, right in
+            distanceSquared(point, to: left) < distanceSquared(point, to: right)
+        }
+    }
+
     /// Whether a selection rect is usable for restore (intersects a real screen and large enough).
     static func isValidSelection(_ rect: CGRect, in desktop: CGRect) -> Bool {
         guard rect.width >= minimumSelectionSide, rect.height >= minimumSelectionSide else { return false }

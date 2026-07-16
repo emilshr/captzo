@@ -6,7 +6,7 @@ import ScreenCaptureKit
 
 enum ScreenshotCaptureService {
     static let screenRecordingRestartHint =
-        "After granting or changing Screen Recording permission, quit Scratio and relaunch it for capture to work."
+        "After granting or changing Screen Recording permission, quit Captzo and relaunch it for capture to work."
 
     enum CaptureError: LocalizedError {
         case permissionDenied
@@ -32,7 +32,8 @@ enum ScreenshotCaptureService {
     }
 
     static var permissionDeniedMessage: String {
-        "Screen Recording permission is required. Enable Scratio in System Settings → Privacy & Security → Screen Recording. \(screenRecordingRestartHint)"
+        "Screen Recording permission is required. Enable Captzo in System Settings → Privacy & Security "
+            + "→ Screen Recording. \(screenRecordingRestartHint)"
     }
 
     static var permissionRestartRequiredMessage: String {

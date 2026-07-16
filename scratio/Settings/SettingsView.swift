@@ -10,100 +10,127 @@ struct SettingsView: View {
     )
     @State private var isRecordingHotkey = false
     @State private var monitor: Any?
+    @State private var badgeColors: [AspectRatioOption: Color] = Self.loadBadgeColors()
 
     var body: some View {
         @Bindable var appState = appState
 
-        Form {
-            Section("Capture") {
-                Picker("Default Aspect Ratio", selection: $appState.aspectRatio) {
-                    ForEach(AspectRatioOption.allCases) { option in
-                        Text(option.displayName).tag(option)
+        ScrollView {
+            Form {
+                Section("Capture") {
+                    LabeledContent("Default Aspect Ratio") {
+                        AspectRatioMenu(
+                            selection: $appState.aspectRatio,
+                            labelStyle: .settings
+                        )
+                        .frame(maxWidth: 220)
                     }
+
+                    Toggle("Open Gallery After Capture", isOn: $appState.openGalleryAfterCapture)
                 }
 
-                Toggle("Open Gallery After Capture", isOn: $appState.openGalleryAfterCapture)
-            }
-
-            Section("Feedback") {
-                TextField("Copied to clipboard", text: $appState.clipboardToastMessage)
-                Text("Shown after a screenshot is copied.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            Section("Global Hotkey") {
-                HStack {
-                    Text("Shortcut")
-                    Spacer()
-                    Text(isRecordingHotkey ? "Press keys…" : hotkeyDisplay)
-                        .foregroundStyle(isRecordingHotkey ? .secondary : .primary)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 4)
-                        .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 6))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 6)
-                                .strokeBorder(isRecordingHotkey ? Color.accentColor : Color.clear, lineWidth: 2)
-                        )
-
-                    Button(isRecordingHotkey ? "Cancel" : "Record") {
-                        if isRecordingHotkey {
-                            stopRecording()
-                        } else {
-                            startRecording()
+                Section("Aspect Ratio Colors") {
+                    ForEach(AspectRatioOption.allCases) { option in
+                        HStack {
+                            AspectRatioBadge(label: option.displayName, option: option)
+                                .id(appState.badgeColorRevision)
+                            Spacer()
+                            ColorPicker(
+                                "Color",
+                                selection: binding(for: option),
+                                supportsOpacity: false
+                            )
+                            .labelsHidden()
                         }
                     }
+
+                    Button("Reset Colors to Defaults") {
+                        AppPreferences.resetBadgeColors()
+                        badgeColors = Self.loadBadgeColors()
+                        appState.notifyBadgeColorsChanged()
+                    }
                 }
 
-                Text("Default is ⌘⇧6. The hotkey works while Scratio is running.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                Text(ScreenshotCaptureService.screenRecordingRestartHint)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
-                Button("Reset to Default") {
-                    AppPreferences.hotkeyKeyCode = AppPreferences.defaultHotkeyKeyCode
-                    AppPreferences.hotkeyModifiers = AppPreferences.defaultHotkeyModifiers
-                    refreshHotkey()
-                    reregister()
-                }
-            }
-
-            Section("Permissions") {
-                LabeledContent("Screen Recording") {
-                    Text(ScreenshotCaptureService.hasScreenCaptureAccess() ? "Granted" : "Not Granted")
-                        .foregroundStyle(
-                            ScreenshotCaptureService.hasScreenCaptureAccess() ? .green : .orange
-                        )
-                }
-
-                Button("Open Screen Recording Settings") {
-                    ScreenshotCaptureService.openScreenRecordingSettings()
-                }
-
-                Button("Request Permission") {
-                    appState.requestScreenRecordingPermission()
-                }
-            }
-
-            Section("Storage") {
-                LabeledContent("Screenshots Folder") {
-                    Text(appState.screenshotsFolderPath)
+                Section("Feedback") {
+                    TextField("Copied to clipboard", text: $appState.clipboardToastMessage)
+                    Text("Shown after a screenshot is copied.")
                         .font(.caption)
-                        .textSelection(.enabled)
-                        .lineLimit(2)
+                        .foregroundStyle(.secondary)
                 }
 
-                Button("Reveal in Finder") {
-                    appState.revealScreenshotsFolderInFinder()
+                Section("Global Hotkey") {
+                    HStack {
+                        Text("Shortcut")
+                        Spacer()
+                        Text(isRecordingHotkey ? "Press keys…" : hotkeyDisplay)
+                            .foregroundStyle(isRecordingHotkey ? .secondary : .primary)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 4)
+                            .background(Color(nsColor: .controlBackgroundColor), in: RoundedRectangle(cornerRadius: 6))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 6)
+                                    .strokeBorder(isRecordingHotkey ? Color.accentColor : Color.clear, lineWidth: 2)
+                            )
+
+                        Button(isRecordingHotkey ? "Cancel" : "Record") {
+                            if isRecordingHotkey {
+                                stopRecording()
+                            } else {
+                                startRecording()
+                            }
+                        }
+                    }
+
+                    Text("Default is ⌘⇧6. The hotkey works while Captzo is running.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                    Text(ScreenshotCaptureService.screenRecordingRestartHint)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+
+                    Button("Reset to Default") {
+                        AppPreferences.hotkeyKeyCode = AppPreferences.defaultHotkeyKeyCode
+                        AppPreferences.hotkeyModifiers = AppPreferences.defaultHotkeyModifiers
+                        refreshHotkey()
+                        reregister()
+                    }
+                }
+
+                Section("Permissions") {
+                    LabeledContent("Screen Recording") {
+                        Text(ScreenshotCaptureService.hasScreenCaptureAccess() ? "Granted" : "Not Granted")
+                            .foregroundStyle(
+                                ScreenshotCaptureService.hasScreenCaptureAccess() ? .green : .orange
+                            )
+                    }
+
+                    Button("Open Screen Recording Settings") {
+                        ScreenshotCaptureService.openScreenRecordingSettings()
+                    }
+
+                    Button("Request Permission") {
+                        appState.requestScreenRecordingPermission()
+                    }
+                }
+
+                Section("Storage") {
+                    LabeledContent("Screenshots Folder") {
+                        Text(appState.screenshotsFolderPath)
+                            .font(.caption)
+                            .textSelection(.enabled)
+                            .lineLimit(2)
+                    }
+
+                    Button("Reveal in Finder") {
+                        appState.revealScreenshotsFolderInFinder()
+                    }
                 }
             }
+            .formStyle(.grouped)
+            .padding()
         }
-        .formStyle(.grouped)
-        .padding()
-        .frame(minWidth: 480, minHeight: 360)
+        .frame(minWidth: 480, maxWidth: .infinity, minHeight: 360, maxHeight: .infinity)
         .alert("Screen Recording Required", isPresented: $appState.showPermissionAlert) {
             Button("Open System Settings") {
                 ScreenshotCaptureService.openScreenRecordingSettings()
@@ -118,6 +145,29 @@ struct SettingsView: View {
         .onDisappear {
             stopRecording()
         }
+    }
+
+    private func binding(for option: AspectRatioOption) -> Binding<Color> {
+        Binding(
+            get: {
+                badgeColors[option] ?? option.badgeColor
+            },
+            set: { newColor in
+                badgeColors[option] = newColor
+                if let hex = newColor.hexString() {
+                    AppPreferences.setBadgeColorHex(hex, for: option)
+                }
+                appState.notifyBadgeColorsChanged()
+            }
+        )
+    }
+
+    private static func loadBadgeColors() -> [AspectRatioOption: Color] {
+        var result: [AspectRatioOption: Color] = [:]
+        for option in AspectRatioOption.allCases {
+            result[option] = option.badgeColor
+        }
+        return result
     }
 
     private func startRecording() {

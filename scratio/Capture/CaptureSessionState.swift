@@ -9,6 +9,24 @@ enum SelectionDragKind: Equatable {
     case create
 }
 
+/// Pointer/hover highlight state — separate from toolbar-relevant session fields
+/// so hover updates do not invalidate the capture dock.
+@MainActor
+@Observable
+final class CapturePointerState {
+    var hoveredWindowID: CGWindowID?
+    var hoveredWindowFrame: CGRect = .zero
+    var selectedWindowID: CGWindowID?
+    var selectedDisplayID: CGDirectDisplayID?
+
+    func reset() {
+        hoveredWindowID = nil
+        selectedWindowID = nil
+        hoveredWindowFrame = .zero
+        selectedDisplayID = nil
+    }
+}
+
 @MainActor
 @Observable
 final class CaptureSessionState {
@@ -25,13 +43,7 @@ final class CaptureSessionState {
     var selectionDragStart: CGPoint = .zero
     var selectionDragOriginRect: CGRect = .zero
 
-    /// Highlighted window under cursor (window mode).
-    var hoveredWindowID: CGWindowID?
-    var hoveredWindowFrame: CGRect = .zero
-    var selectedWindowID: CGWindowID?
-
-    /// Display mode: which display is selected / hovered.
-    var selectedDisplayID: CGDirectDisplayID?
+    let pointer = CapturePointerState()
 
     var onModeChange: ((CaptureMode) -> Void)?
     var onAspectRatioChange: ((AspectRatioOption) -> Void)?
@@ -46,13 +58,10 @@ final class CaptureSessionState {
     func setMode(_ mode: CaptureMode) {
         self.mode = mode
         onModeChange?(mode)
-        hoveredWindowID = nil
-        selectedWindowID = nil
-        hoveredWindowFrame = .zero
-        selectedDisplayID = nil
+        pointer.reset()
         endSelectionInteraction(persist: false)
         if mode == .display {
-            selectedDisplayID = Self.displayID(at: NSEvent.mouseLocation)
+            pointer.selectedDisplayID = Self.displayID(at: NSEvent.mouseLocation)
         }
     }
 
@@ -60,8 +69,7 @@ final class CaptureSessionState {
         aspectRatio = ratio
         onAspectRatioChange?(ratio)
         if ratio.isLocked, selectionRect.width > 0 {
-            let constrained = Self.constrain(selectionRect, to: ratio)
-            selectionRect = Self.clampSelection(constrained)
+            selectionRect = Self.clampSelection(selectionRect, aspectRatio: ratio)
         }
         persistSelection()
     }
@@ -103,13 +111,13 @@ final class CaptureSessionState {
             let dx = location.x - selectionDragStart.x
             let dy = location.y - selectionDragStart.y
             let moved = selectionDragOriginRect.offsetBy(dx: dx, dy: dy)
-            selectionRect = Self.clampSelection(moved)
+            selectionRect = Self.clampSelection(moved, aspectRatio: aspectRatio)
         case .resize(let handle):
             var rect = resize(selectionDragOriginRect, handle: handle, to: location)
             if aspectRatio.isLocked {
                 rect = Self.constrain(rect, to: aspectRatio)
             }
-            selectionRect = Self.clampSelection(rect)
+            selectionRect = Self.clampSelection(rect, aspectRatio: aspectRatio)
         case .create:
             var rect = CGRect(
                 x: min(selectionDragStart.x, location.x),
@@ -129,7 +137,7 @@ final class CaptureSessionState {
                     height: heightFromWidth
                 )
             }
-            selectionRect = Self.clampSelection(rect)
+            selectionRect = Self.clampSelection(rect, aspectRatio: aspectRatio)
         }
     }
 
@@ -203,8 +211,12 @@ final class CaptureSessionState {
     }
 
     @MainActor
-    static func clampSelection(_ rect: CGRect) -> CGRect {
-        ScreenGeometry.clampRect(rect, toScreens: screenFrames())
+    static func clampSelection(_ rect: CGRect, aspectRatio: AspectRatioOption = .independent) -> CGRect {
+        let screens = screenFrames()
+        guard let ratio = aspectRatio.ratio, ratio > 0 else {
+            return ScreenGeometry.clampRect(rect, toScreens: screens)
+        }
+        return ScreenGeometry.clampAspectLockedRect(rect, ratio: ratio, toScreens: screens)
     }
 
     @MainActor

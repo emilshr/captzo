@@ -1,5 +1,7 @@
-import Foundation
+import AppKit
 import CoreGraphics
+import Foundation
+import SwiftUI
 
 enum AspectRatioOption: String, CaseIterable, Identifiable, Codable, Sendable {
     case oneToOne = "1:1"
@@ -30,6 +32,24 @@ enum AspectRatioOption: String, CaseIterable, Identifiable, Codable, Sendable {
     }
 
     var isLocked: Bool { ratio != nil }
+
+    /// Default badge color hex (RGB, no alpha).
+    var defaultBadgeColorHex: String {
+        switch self {
+        case .oneToOne: return "5B8DEF"
+        case .sixteenToNine: return "3DDC97"
+        case .nineToSixteen: return "F4A261"
+        case .fourToThree: return "9B5DE5"
+        case .threeToFour: return "EF476F"
+        case .threeToTwo: return "00BBF9"
+        case .twoToThree: return "FEE440"
+        case .independent: return "8E9AAF"
+        }
+    }
+
+    var badgeColor: Color {
+        Color(hex: AppPreferences.badgeColorHex(for: self) ?? defaultBadgeColorHex)
+    }
 }
 
 enum CaptureMode: String, CaseIterable, Identifiable, Sendable {
@@ -67,5 +87,47 @@ enum GallerySortOrder: String, CaseIterable, Identifiable, Sendable {
         case .newestFirst: return "Newest First"
         case .oldestFirst: return "Oldest First"
         }
+    }
+}
+
+extension Color {
+    init(hex: String) {
+        let cleaned = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+        var int: UInt64 = 0
+        Scanner(string: cleaned).scanHexInt64(&int)
+        let red: Double
+        let green: Double
+        let blue: Double
+        switch cleaned.count {
+        case 6:
+            red = Double((int >> 16) & 0xFF) / 255
+            green = Double((int >> 8) & 0xFF) / 255
+            blue = Double(int & 0xFF) / 255
+        default:
+            red = 0.5
+            green = 0.5
+            blue = 0.5
+        }
+        self.init(red: red, green: green, blue: blue)
+    }
+
+    func hexString() -> String? {
+        #if os(macOS)
+        let nsColor = NSColor(self)
+        guard let rgb = nsColor.usingColorSpace(.deviceRGB) ?? nsColor.usingColorSpace(.sRGB) else {
+            return nil
+        }
+        let red = Int((rgb.redComponent * 255).rounded())
+        let green = Int((rgb.greenComponent * 255).rounded())
+        let blue = Int((rgb.blueComponent * 255).rounded())
+        return String(
+            format: "%02X%02X%02X",
+            max(0, min(255, red)),
+            max(0, min(255, green)),
+            max(0, min(255, blue))
+        )
+        #else
+        return nil
+        #endif
     }
 }

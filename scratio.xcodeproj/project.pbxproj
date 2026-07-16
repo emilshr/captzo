@@ -24,7 +24,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		20BA4A2B3006581C00560FBA /* scratio.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = scratio.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		20BA4A2B3006581C00560FBA /* Captzo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Captzo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		20BA4A383006581D00560FBA /* scratioTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = scratioTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		20BA4A423006581D00560FBA /* scratioUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = scratioUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -98,7 +98,7 @@
 		20BA4A2C3006581C00560FBA /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				20BA4A2B3006581C00560FBA /* scratio.app */,
+				20BA4A2B3006581C00560FBA /* Captzo.app */,
 				20BA4A383006581D00560FBA /* scratioTests.xctest */,
 				20BA4A423006581D00560FBA /* scratioUITests.xctest */,
 			);
@@ -106,32 +106,6 @@
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
-
-/* Begin PBXShellScriptBuildPhase section */
-		20BA4A623006581D00560FBA /* SwiftLint */ = {
-			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-				"$(SRCROOT)/.swiftlint.yml",
-				"$(SRCROOT)/.swiftlint.baseline",
-				"$(SRCROOT)/scratio",
-			);
-			name = SwiftLint;
-			outputFileListPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "export PATH=\"/opt/homebrew/bin:$PATH\"\nif [ -x \"${SRCROOT}/scripts/swiftlint.sh\" ]; then\n  \"${SRCROOT}/scripts/swiftlint.sh\"\nelif command -v swiftlint >/dev/null; then\n  echo \"warning: scripts/swiftlint.sh missing; falling back to swiftlint without portable baseline.\"\n  cd \"${SRCROOT}\"\n  swiftlint lint --strict scratio\nelse\n  echo \"warning: SwiftLint not installed; run brew install swiftlint.\"\nfi\n";
-			showEnvVarsInLog = 0;
-		};
-/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXNativeTarget section */
 		20BA4A2A3006581C00560FBA /* scratio */ = {
@@ -151,8 +125,8 @@
 				20BA4A2D3006581C00560FBA /* scratio */,
 			);
 			name = scratio;
-			productName = scratio;
-			productReference = 20BA4A2B3006581C00560FBA /* scratio.app */;
+			productName = Captzo;
+			productReference = 20BA4A2B3006581C00560FBA /* Captzo.app */;
 			productType = "com.apple.product-type.application";
 		};
 		20BA4A373006581D00560FBA /* scratioTests */ = {
@@ -268,6 +242,32 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		20BA4A623006581D00560FBA /* SwiftLint */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/.swiftlint.yml",
+				"$(SRCROOT)/.swiftlint.baseline",
+				"$(SRCROOT)/scratio",
+			);
+			name = SwiftLint;
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "export PATH=\"/opt/homebrew/bin:$PATH\"\nif [ -x \"${SRCROOT}/scripts/swiftlint.sh\" ]; then\n  \"${SRCROOT}/scripts/swiftlint.sh\"\nelif command -v swiftlint >/dev/null; then\n  echo \"warning: scripts/swiftlint.sh missing; falling back to swiftlint without portable baseline.\"\n  cd \"${SRCROOT}\"\n  swiftlint lint --strict scratio\nelse\n  echo \"warning: SwiftLint not installed; run brew install swiftlint.\"\nfi\n";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		20BA4A273006581C00560FBA /* Sources */ = {
@@ -439,16 +439,17 @@
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = scratio/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Captzo;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				INFOPLIST_KEY_NSScreenCaptureUsageDescription = "Scratio needs Screen Recording access to capture screenshots with aspect-ratio selection.";
+				INFOPLIST_KEY_NSScreenCaptureUsageDescription = "Captzo needs Screen Recording access to capture screenshots with aspect-ratio selection.";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = emilshr.scratio;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = emilshr.captzo;
+				PRODUCT_NAME = Captzo;
 				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -473,16 +474,17 @@
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = scratio/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Captzo;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				INFOPLIST_KEY_NSScreenCaptureUsageDescription = "Scratio needs Screen Recording access to capture screenshots with aspect-ratio selection.";
+				INFOPLIST_KEY_NSScreenCaptureUsageDescription = "Captzo needs Screen Recording access to capture screenshots with aspect-ratio selection.";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = emilshr.scratio;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_BUNDLE_IDENTIFIER = emilshr.captzo;
+				PRODUCT_NAME = Captzo;
 				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -502,14 +504,14 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 15.7;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = emilshr.scratioTests;
+				PRODUCT_BUNDLE_IDENTIFIER = emilshr.captzoTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/scratio.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/scratio";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Captzo.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Captzo";
 			};
 			name = Debug;
 		};
@@ -522,14 +524,14 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				MACOSX_DEPLOYMENT_TARGET = 15.7;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = emilshr.scratioTests;
+				PRODUCT_BUNDLE_IDENTIFIER = emilshr.captzoTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/scratio.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/scratio";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Captzo.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Captzo";
 			};
 			name = Release;
 		};
@@ -540,7 +542,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = emilshr.scratioUITests;
+				PRODUCT_BUNDLE_IDENTIFIER = emilshr.captzoUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -558,7 +560,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = emilshr.scratioUITests;
+				PRODUCT_BUNDLE_IDENTIFIER = emilshr.captzoUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = NO;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
