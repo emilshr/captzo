@@ -60,6 +60,8 @@ struct AspectRatioMenu: View {
                     Text(selection.displayName)
                         .font(.system(size: 12, weight: .medium))
                         .foregroundStyle(.white.opacity(0.9))
+                        .lineLimit(1)
+                        .fixedSize(horizontal: true, vertical: false)
                 }
                 Spacer(minLength: 8)
                 Image(systemName: "chevron.up.chevron.down")

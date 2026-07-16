@@ -136,6 +136,8 @@ struct CaptureToolbarView: View {
                 Text(option.displayName)
                     .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(isSelected ? Color.accentColor : Color.white.opacity(0.85))
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
             }
             .padding(.horizontal, 10)
             .frame(height: Self.controlHeight)
