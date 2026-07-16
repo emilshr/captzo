@@ -33,6 +33,7 @@ final class AppState {
     var galleryOpenToken: Int = 0
 
     let captureCoordinator = CaptureCoordinator()
+    private let toastController = ToastWindowController()
 
     private init() {
         reloadScreenshots()
@@ -117,6 +118,7 @@ final class AppState {
     func copyToClipboard(_ screenshot: CapturedScreenshot) {
         if ClipboardService.copy(contentsOf: screenshot.fileURL) {
             statusMessage = "Copied to clipboard"
+            showClipboardToast()
         } else {
             statusMessage = "Failed to copy screenshot"
         }
@@ -147,7 +149,7 @@ final class AppState {
         mode: CaptureMode,
         ratio: AspectRatioOption
     ) async {
-        ClipboardService.copy(image)
+        let didCopy = ClipboardService.copy(image)
 
         do {
             let item = try ScreenshotStore.shared.save(
@@ -156,7 +158,12 @@ final class AppState {
                 captureMode: mode
             )
             reloadScreenshots()
-            statusMessage = "Screenshot copied & saved"
+            if didCopy {
+                statusMessage = "Screenshot copied & saved"
+                showClipboardToast()
+            } else {
+                statusMessage = "Failed to copy screenshot"
+            }
             selectedScreenshot = item
 
             if AppPreferences.openGalleryAfterCapture {
@@ -167,6 +174,12 @@ final class AppState {
         }
 
         isCapturing = false
+    }
+
+    private func showClipboardToast() {
+        let message = AppPreferences.clipboardToastMessage
+        let screen = NSScreen.screens.first { $0.frame.contains(NSEvent.mouseLocation) } ?? NSScreen.main
+        toastController.show(message: message, on: screen)
     }
 }
 

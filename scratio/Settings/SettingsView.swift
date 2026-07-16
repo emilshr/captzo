@@ -9,6 +9,7 @@ struct SettingsView: View {
         keyCode: AppPreferences.hotkeyKeyCode,
         modifiers: AppPreferences.hotkeyModifiers
     )
+    @State private var clipboardToastMessage = AppPreferences.clipboardToastMessage
     @State private var isRecordingHotkey = false
     @State private var monitor: Any?
     @Bindable private var appState = AppState.shared
@@ -30,6 +31,16 @@ struct SettingsView: View {
                     .onChange(of: openGalleryAfterCapture) { _, newValue in
                         AppPreferences.openGalleryAfterCapture = newValue
                     }
+            }
+
+            Section("Feedback") {
+                TextField("Copied to clipboard", text: $clipboardToastMessage)
+                    .onChange(of: clipboardToastMessage) { _, newValue in
+                        AppPreferences.clipboardToastMessage = newValue
+                    }
+                Text("Shown after a screenshot is copied.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
 
             Section("Global Hotkey") {
