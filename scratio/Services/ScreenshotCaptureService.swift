@@ -1,11 +1,16 @@
 import AppKit
 import CoreGraphics
+import CoreVideo
 import Foundation
 import ScreenCaptureKit
 
 enum ScreenshotCaptureService {
+    static let screenRecordingRestartHint =
+        "After granting or changing Screen Recording permission, quit Scratio and relaunch it for capture to work."
+
     enum CaptureError: LocalizedError {
         case permissionDenied
+        case permissionRestartRequired
         case noDisplay
         case captureFailed(String)
         case windowNotFound
@@ -13,7 +18,9 @@ enum ScreenshotCaptureService {
         var errorDescription: String? {
             switch self {
             case .permissionDenied:
-                return "Screen Recording permission is required. Enable it in System Settings → Privacy & Security → Screen Recording."
+                return permissionDeniedMessage
+            case .permissionRestartRequired:
+                return permissionRestartRequiredMessage
             case .noDisplay:
                 return "No display available to capture."
             case .captureFailed(let message):
@@ -22,6 +29,14 @@ enum ScreenshotCaptureService {
                 return "Selected window is no longer available."
             }
         }
+    }
+
+    static var permissionDeniedMessage: String {
+        "Screen Recording permission is required. Enable Scratio in System Settings → Privacy & Security → Screen Recording. \(screenRecordingRestartHint)"
+    }
+
+    static var permissionRestartRequiredMessage: String {
+        "Screen Recording permission changed. \(screenRecordingRestartHint)"
     }
 
     static func hasScreenCaptureAccess() -> Bool {
@@ -48,7 +63,7 @@ enum ScreenshotCaptureService {
 
         do {
             let cgImage = try await SCScreenshotManager.captureImage(in: captureRect)
-            return nsImage(from: cgImage, pointSize: rect.size, scale: scale)
+            return try nsImage(from: cgImage, pointSize: rect.size, scale: scale, rejectBlank: false)
         } catch {
             throw CaptureError.captureFailed(error.localizedDescription)
         }
@@ -58,18 +73,15 @@ enum ScreenshotCaptureService {
         try await ensurePermission()
 
         let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
-        guard let display = content.displays.first(where: { $0.displayID == displayID })
-                ?? content.displays.first else {
+        guard let display = content.displays.first(where: { $0.displayID == displayID }) else {
             throw CaptureError.noDisplay
         }
 
         let filter = SCContentFilter(display: display, excludingWindows: [])
-        let config = SCStreamConfiguration()
-        // SCDisplay.width/height are already pixel dimensions.
-        config.width = display.width
-        config.height = display.height
-        config.showsCursor = false
-        config.capturesAudio = false
+        let config = makeStreamConfiguration(
+            width: display.width,
+            height: display.height
+        )
 
         let scale = scaleFactor(forDisplayID: display.displayID)
         let pointSize = NSSize(
@@ -82,7 +94,7 @@ enum ScreenshotCaptureService {
                 contentFilter: filter,
                 configuration: config
             )
-            return nsImage(from: cgImage, pointSize: pointSize, scale: scale)
+            return try nsImage(from: cgImage, pointSize: pointSize, scale: scale, rejectBlank: false)
         } catch {
             throw CaptureError.captureFailed(error.localizedDescription)
         }
@@ -91,103 +103,214 @@ enum ScreenshotCaptureService {
     static func captureWindow(windowID: CGWindowID) async throws -> NSImage {
         try await ensurePermission()
 
-        let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
+        // Always re-fetch shareable content so the SCWindow is fresh after overlays hide.
+        let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: false)
         guard let window = content.windows.first(where: { $0.windowID == windowID }) else {
             throw CaptureError.windowNotFound
         }
 
-        let filter = SCContentFilter(desktopIndependentWindow: window)
-        let config = SCStreamConfiguration()
-        let frame = window.frame
-        let scale = scaleFactor(forWindowFrame: frame)
-        // SCStreamConfiguration expects pixel buffer size, not points.
-        config.width = max(Int((frame.width * scale).rounded()), 1)
-        config.height = max(Int((frame.height * scale).rounded()), 1)
-        config.showsCursor = false
-        config.capturesAudio = false
+        if window.frame.width < 1 || window.frame.height < 1 {
+            throw CaptureError.captureFailed("Window has zero size.")
+        }
+
+        var lastError: Error?
+        do {
+            return try await captureWindowIndependent(window)
+        } catch {
+            lastError = error
+        }
 
         do {
-            let cgImage = try await SCScreenshotManager.captureImage(
-                contentFilter: filter,
-                configuration: config
-            )
-            return nsImage(
-                from: cgImage,
-                pointSize: NSSize(width: frame.width, height: frame.height),
-                scale: scale
-            )
+            return try await captureWindowViaDisplay(window, content: content)
         } catch {
-            throw CaptureError.captureFailed(error.localizedDescription)
+            throw lastError ?? error
         }
     }
 
-    /// Returns on-screen app windows frontmost-first (lower `windowLayer` first, then list order).
+    /// Window IDs from front to back (CGWindowList order).
+    static func orderedOnScreenWindowIDs() -> [CGWindowID] {
+        guard let list = CGWindowListCopyWindowInfo(
+            [.optionOnScreenOnly, .excludeDesktopElements],
+            kCGNullWindowID
+        ) as? [[String: Any]] else {
+            return []
+        }
+        return list.compactMap { info in
+            guard let num = info[kCGWindowNumber as String] as? NSNumber else { return nil }
+            return CGWindowID(num.uint32Value)
+        }
+    }
+
+    /// Returns on-screen app windows suitable for window capture picking.
     static func fetchWindows() async throws -> [SCWindow] {
         try await ensurePermission()
         let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
         let ownPID = ProcessInfo.processInfo.processIdentifier
-        return content.windows
-            .filter { window in
-                guard let app = window.owningApplication else { return false }
-                if app.processID == ownPID { return false }
-                if window.frame.width < 40 || window.frame.height < 40 { return false }
-                return window.isOnScreen
-            }
-            .sorted { lhs, rhs in
-                if lhs.windowLayer != rhs.windowLayer {
-                    return lhs.windowLayer < rhs.windowLayer
-                }
-                // Prefer smaller windows when layers match so nested content wins over large shells.
-                let lhsArea = lhs.frame.width * lhs.frame.height
-                let rhsArea = rhs.frame.width * rhs.frame.height
-                return lhsArea < rhsArea
-            }
+        return content.windows.filter { window in
+            isPickableWindow(window, ownPID: ownPID)
+        }
+    }
+
+    static func isPickableWindow(
+        _ window: SCWindow,
+        ownPID: pid_t = ProcessInfo.processInfo.processIdentifier
+    ) -> Bool {
+        guard let app = window.owningApplication else { return false }
+        if app.processID == ownPID { return false }
+        if window.frame.width < 40 || window.frame.height < 40 { return false }
+        if !window.isOnScreen { return false }
+        if !ScreenGeometry.isPickableWindowTitle(window.title, appName: app.applicationName) { return false }
+        if !ScreenGeometry.isPickableWindowLayer(window.windowLayer) { return false }
+        return true
+    }
+
+    /// Hit-tests `location` (AppKit global) using CGWindow z-order, then layer fallback.
+    static func windowAt(
+        point location: CGPoint,
+        in windows: [SCWindow]
+    ) -> SCWindow? {
+        let candidates = windows.enumerated().map { index, window in
+            ScreenGeometry.WindowHitCandidate(
+                id: window.windowID,
+                frame: convertSCWindowFrameToAppKit(window.frame),
+                windowLayer: window.windowLayer,
+                sourceIndex: index
+            )
+        }
+        let windowByID = Dictionary(uniqueKeysWithValues: windows.map { ($0.windowID, $0) })
+
+        if let hitID = ScreenGeometry.frontmostWindowID(
+            at: location,
+            orderedWindowIDs: orderedOnScreenWindowIDs(),
+            candidates: candidates
+        ), let hit = windowByID[hitID] {
+            return hit
+        }
+
+        if let fallback = ScreenGeometry.frontmostWindow(at: location, in: candidates) {
+            return windowByID[fallback.id]
+        }
+        return nil
+    }
+
+    private static func captureWindowIndependent(_ window: SCWindow) async throws -> NSImage {
+        let filter = SCContentFilter(desktopIndependentWindow: window)
+        let scale = CGFloat(filter.pointPixelScale)
+        guard let pixelSize = ScreenGeometry.capturePixelSize(
+            contentRect: filter.contentRect,
+            pointPixelScale: scale
+        ) else {
+            throw CaptureError.captureFailed("Invalid window content metrics.")
+        }
+
+        let config = makeStreamConfiguration(width: pixelSize.width, height: pixelSize.height)
+        config.ignoreShadowsSingleWindow = true
+
+        let cgImage = try await SCScreenshotManager.captureImage(
+            contentFilter: filter,
+            configuration: config
+        )
+        return try nsImage(
+            from: cgImage,
+            pointSize: NSSize(width: filter.contentRect.width, height: filter.contentRect.height),
+            scale: scale,
+            rejectBlank: true
+        )
+    }
+
+    private static func captureWindowViaDisplay(
+        _ window: SCWindow,
+        content: SCShareableContent
+    ) async throws -> NSImage {
+        let center = CGPoint(x: window.frame.midX, y: window.frame.midY)
+        guard let display = content.displays.first(where: { $0.frame.contains(center) }) else {
+            throw CaptureError.noDisplay
+        }
+
+        let filter = SCContentFilter(display: display, including: [window])
+        let scale = CGFloat(filter.pointPixelScale)
+        guard let pixelSize = ScreenGeometry.capturePixelSize(
+            contentRect: filter.contentRect,
+            pointPixelScale: scale
+        ) else {
+            throw CaptureError.captureFailed("Invalid window content metrics.")
+        }
+
+        let config = makeStreamConfiguration(width: pixelSize.width, height: pixelSize.height)
+        config.ignoreShadowsSingleWindow = true
+
+        let cgImage = try await SCScreenshotManager.captureImage(
+            contentFilter: filter,
+            configuration: config
+        )
+        return try nsImage(
+            from: cgImage,
+            pointSize: NSSize(width: filter.contentRect.width, height: filter.contentRect.height),
+            scale: scale,
+            rejectBlank: true
+        )
+    }
+
+    private static func makeStreamConfiguration(width: Int, height: Int) -> SCStreamConfiguration {
+        let config = SCStreamConfiguration()
+        config.width = max(width, 1)
+        config.height = max(height, 1)
+        config.showsCursor = false
+        config.capturesAudio = false
+        config.pixelFormat = kCVPixelFormatType_32BGRA
+        return config
     }
 
     private static func ensurePermission() async throws {
         if hasScreenCaptureAccess() { return }
-        let granted = requestScreenCaptureAccess()
-        if !granted && !hasScreenCaptureAccess() {
-            throw CaptureError.permissionDenied
+        _ = requestScreenCaptureAccess()
+        if hasScreenCaptureAccess() { return }
+        throw CaptureError.permissionDenied
+    }
+
+    static func mapCaptureError(_ error: Error) -> CaptureError {
+        if let captureError = error as? CaptureError {
+            return captureError
         }
+        let description = error.localizedDescription.lowercased()
+        if description.contains("declined") || description.contains("permission") {
+            return hasScreenCaptureAccess() ? .permissionRestartRequired : .permissionDenied
+        }
+        return .captureFailed(error.localizedDescription)
     }
 
     /// Converts AppKit global rect (origin bottom-left) to Quartz/SCK space using the primary screen baseline.
     static func convertToCaptureSpace(_ appKitRect: CGRect) -> CGRect {
-        let primaryMaxY = primaryScreenMaxY()
-        let flippedY = primaryMaxY - appKitRect.origin.y - appKitRect.height
-        return CGRect(
-            x: appKitRect.origin.x,
-            y: flippedY,
-            width: appKitRect.width,
-            height: appKitRect.height
-        )
+        ScreenGeometry.convertToCaptureSpace(appKitRect, primaryMaxY: primaryScreenMaxY())
     }
 
     /// Converts SCK/CG window frame (top-left) to AppKit global (bottom-left).
     static func convertSCWindowFrameToAppKit(_ frame: CGRect) -> CGRect {
-        let primaryMaxY = primaryScreenMaxY()
-        return CGRect(
-            x: frame.origin.x,
-            y: primaryMaxY - frame.origin.y - frame.height,
-            width: frame.width,
-            height: frame.height
-        )
+        ScreenGeometry.convertSCWindowFrameToAppKit(frame, primaryMaxY: primaryScreenMaxY())
     }
 
     static func primaryScreenMaxY() -> CGFloat {
-        // screens[0] is the primary (menu-bar) screen — use its maxY, not the union of all displays.
         (NSScreen.screens.first ?? NSScreen.main)?.frame.maxY ?? 0
     }
 
-    private static func nsImage(from cgImage: CGImage, pointSize: NSSize, scale: CGFloat) -> NSImage {
+    private static func nsImage(
+        from cgImage: CGImage?,
+        pointSize: NSSize,
+        scale: CGFloat,
+        rejectBlank: Bool
+    ) throws -> NSImage {
+        guard let cgImage, cgImage.width > 0, cgImage.height > 0 else {
+            throw CaptureError.captureFailed("Capture returned an empty image.")
+        }
+        if rejectBlank, ScreenGeometry.isNearlyBlank(cgImage) {
+            throw CaptureError.captureFailed("Capture returned a blank image.")
+        }
         let size = NSSize(
             width: max(pointSize.width, 1),
             height: max(pointSize.height, 1)
         )
         let image = NSImage(size: size)
         image.addRepresentation(NSBitmapImageRep(cgImage: cgImage))
-        // Keep full-resolution pixels while advertising correct point size for pasteboard hosts.
         _ = scale
         return image
     }
@@ -205,10 +328,5 @@ enum ScreenshotCaptureService {
             }
         }
         return NSScreen.main?.backingScaleFactor ?? 2
-    }
-
-    private static func scaleFactor(forWindowFrame frame: CGRect) -> CGFloat {
-        let appKitFrame = convertSCWindowFrameToAppKit(frame)
-        return backingScaleFactor(for: appKitFrame)
     }
 }

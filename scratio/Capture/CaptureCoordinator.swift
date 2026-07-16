@@ -84,7 +84,8 @@ final class CaptureCoordinator {
                 return
             } catch {
                 guard !Task.isCancelled else { return }
-                presentCaptureError(error)
+                let mapped = ScreenshotCaptureService.mapCaptureError(error)
+                presentCaptureError(mapped)
                 cancelHandler?()
             }
         }
@@ -93,16 +94,21 @@ final class CaptureCoordinator {
     private func presentCaptureError(_ error: Error) {
         NSApp.setActivationPolicy(.regular)
         NSApp.activate(ignoringOtherApps: true)
+        if let captureError = error as? ScreenshotCaptureService.CaptureError,
+           case .permissionDenied = captureError {
+            AppState.shared.showCapturePermissionError(captureError)
+            return
+        }
+        if let captureError = error as? ScreenshotCaptureService.CaptureError,
+           case .permissionRestartRequired = captureError {
+            AppState.shared.showCapturePermissionError(captureError)
+            return
+        }
         let alert = NSAlert(error: error)
         alert.runModal()
     }
 
     private func displayIDUnderMouse() -> CGDirectDisplayID {
-        let location = NSEvent.mouseLocation
-        let screen = NSScreen.screens.first { $0.frame.contains(location) } ?? NSScreen.main
-        if let num = screen?.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber {
-            return CGDirectDisplayID(num.uint32Value)
-        }
-        return CGMainDisplayID()
+        CaptureSessionState.displayID(at: NSEvent.mouseLocation)
     }
 }
