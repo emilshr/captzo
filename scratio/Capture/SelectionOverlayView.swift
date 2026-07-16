@@ -7,33 +7,40 @@ struct SelectionOverlayView: View {
     /// Local frame of this overlay window (equals screen.frame).
     let screenFrame: CGRect
 
-    @State private var dragStart: CGPoint?
-    @State private var dragOriginRect: CGRect = .zero
-    @State private var activeHandle: ResizeHandle?
+    private var screenDisplayID: CGDirectDisplayID? {
+        CaptureSessionState.displayID(for: screen)
+    }
+
+    private var isSelectedDisplay: Bool {
+        guard let screenDisplayID else { return false }
+        return session.selectedDisplayID == screenDisplayID
+    }
 
     var body: some View {
         GeometryReader { _ in
             ZStack {
-                // Dim overlay with cutout for the active capture region
+                // Dim overlay with cutout for the active capture region.
+                // Hit-testing stays enabled in selection mode so the NSWindow
+                // receives mouse-down and local monitors can drive cross-screen drags.
                 DimCutoutShape(cutout: activeCutout)
                     .fill(Color.black.opacity(0.45), style: FillStyle(eoFill: true))
-                    .allowsHitTesting(true)
 
                 if session.mode == .selection, localSelectionRect.width > 1 {
                     selectionChrome
                 }
 
-                if session.mode == .window, session.hoveredWindowFrame != .zero {
+                if session.mode == .window,
+                   session.hoveredWindowFrame != .zero,
+                   session.hoveredWindowFrame.intersects(screenFrame) {
                     windowHighlight
                 }
 
-                if session.mode == .display {
+                if session.mode == .display, isSelectedDisplay {
                     displayHighlight
                 }
             }
             .contentShape(Rectangle())
-            .gesture(selectionGesture)
-            .onTapGesture(count: 1, perform: handleTap)
+            .allowsHitTesting(session.mode != .display)
         }
         .ignoresSafeArea()
     }
@@ -47,16 +54,21 @@ struct SelectionOverlayView: View {
         case .selection:
             return localSelectionRect
         case .window:
-            return session.hoveredWindowFrame == .zero ? .zero : toLocal(session.hoveredWindowFrame)
+            guard session.hoveredWindowFrame != .zero,
+                  session.hoveredWindowFrame.intersects(screenFrame) else {
+                return .zero
+            }
+            return toLocal(session.hoveredWindowFrame)
         case .display:
-            // Full-screen cutout (no dim) for the active display overlay
-            return CGRect(origin: .zero, size: CGSize(width: screenFrame.width, height: screenFrame.height))
+            // Clear cutout only on the hovered/selected display; others stay dimmed.
+            return isSelectedDisplay
+                ? CGRect(origin: .zero, size: CGSize(width: screenFrame.width, height: screenFrame.height))
+                : .zero
         }
     }
 
     private var selectionChrome: some View {
         ZStack {
-            // Marching ants style dashed border
             Rectangle()
                 .strokeBorder(
                     style: StrokeStyle(lineWidth: 1.5, dash: [6, 4])
@@ -70,7 +82,6 @@ struct SelectionOverlayView: View {
                 .frame(width: localSelectionRect.width, height: localSelectionRect.height)
                 .position(x: localSelectionRect.midX, y: localSelectionRect.midY)
 
-            // Grid crosshairs (subtle, like native)
             Path { path in
                 let r = localSelectionRect
                 path.move(to: CGPoint(x: r.minX + r.width / 3, y: r.minY))
@@ -129,175 +140,12 @@ struct SelectionOverlayView: View {
         return "\(w) × \(h)"
     }
 
-    private var selectionGesture: some Gesture {
-        DragGesture(minimumDistance: 2, coordinateSpace: .local)
-            .onChanged { value in
-                guard session.mode == .selection else { return }
-                if dragStart == nil {
-                    dragStart = value.startLocation
-                    let handle = hitHandle(at: value.startLocation)
-                    activeHandle = handle
-                    if handle != nil {
-                        session.isResizing = true
-                        dragOriginRect = localSelectionRect
-                    } else if localSelectionRect.contains(value.startLocation) {
-                        session.isDragging = true
-                        dragOriginRect = localSelectionRect
-                    } else {
-                        // Start new selection from drag
-                        session.isDragging = false
-                        session.isResizing = false
-                        dragOriginRect = CGRect(origin: value.startLocation, size: .zero)
-                    }
-                }
-
-                if let handle = activeHandle {
-                    var rect = resize(dragOriginRect, handle: handle, to: value.location)
-                    if session.aspectRatio.isLocked {
-                        rect = constrainLocal(rect, to: session.aspectRatio)
-                    }
-                    session.selectionRect = toGlobal(rect)
-                } else if session.isDragging {
-                    let dx = value.location.x - (dragStart?.x ?? 0)
-                    let dy = value.location.y - (dragStart?.y ?? 0)
-                    var moved = dragOriginRect.offsetBy(dx: dx, dy: dy)
-                    moved = clampToScreen(moved)
-                    session.selectionRect = toGlobal(moved)
-                } else if let start = dragStart {
-                    var rect = CGRect(
-                        x: min(start.x, value.location.x),
-                        y: min(start.y, value.location.y),
-                        width: abs(value.location.x - start.x),
-                        height: abs(value.location.y - start.y)
-                    )
-                    if session.aspectRatio.isLocked {
-                        rect = constrainLocalFromCorner(rect, start: start, current: value.location)
-                    }
-                    session.selectionRect = toGlobal(clampToScreen(rect))
-                }
-            }
-            .onEnded { _ in
-                dragStart = nil
-                activeHandle = nil
-                session.isDragging = false
-                session.isResizing = false
-            }
-    }
-
-    private func handleTap() {
-        switch session.mode {
-        case .selection:
-            // Tap outside selection does not capture; camera / Enter does.
-            break
-        case .window:
-            if session.hoveredWindowID != nil {
-                session.selectedWindowID = session.hoveredWindowID
-                // Selecting a window does not capture — camera button does.
-            }
-        case .display:
-            if let did = screen.deviceDescription[NSDeviceDescriptionKey("NSScreenNumber")] as? NSNumber {
-                session.selectedDisplayID = CGDirectDisplayID(did.uint32Value)
-            }
-        }
-    }
-
-    // MARK: - Coordinates
-
     /// Convert global AppKit rect to local SwiftUI coords (top-left origin within this screen window).
     private func toLocal(_ global: CGRect) -> CGRect {
-        // Overlay window is placed at screen.frame; SwiftUI Y grows downward.
         let x = global.origin.x - screenFrame.origin.x
         let yFromBottom = global.origin.y - screenFrame.origin.y
         let y = screenFrame.height - yFromBottom - global.height
         return CGRect(x: x, y: y, width: global.width, height: global.height)
-    }
-
-    private func toGlobal(_ local: CGRect) -> CGRect {
-        let x = local.origin.x + screenFrame.origin.x
-        let yFromBottom = screenFrame.height - local.origin.y - local.height
-        let y = yFromBottom + screenFrame.origin.y
-        return CGRect(x: x, y: y, width: local.width, height: local.height)
-    }
-
-    private func clampToScreen(_ local: CGRect) -> CGRect {
-        var r = local
-        r.size.width = max(20, min(r.width, screenFrame.width))
-        r.size.height = max(20, min(r.height, screenFrame.height))
-        r.origin.x = min(max(0, r.origin.x), screenFrame.width - r.width)
-        r.origin.y = min(max(0, r.origin.y), screenFrame.height - r.height)
-        return r
-    }
-
-    private func constrainLocal(_ rect: CGRect, to option: AspectRatioOption) -> CGRect {
-        guard let ratio = option.ratio else { return rect }
-        var r = rect
-        let newHeight = r.width / ratio
-        r.origin.y += (r.height - newHeight) / 2
-        r.size.height = newHeight
-        return clampToScreen(r)
-    }
-
-    private func constrainLocalFromCorner(
-        _ rect: CGRect,
-        start: CGPoint,
-        current: CGPoint
-    ) -> CGRect {
-        guard let ratio = session.aspectRatio.ratio else { return rect }
-        let width = abs(current.x - start.x)
-        let heightFromWidth = width / ratio
-        let signX: CGFloat = current.x >= start.x ? 1 : -1
-        let signY: CGFloat = current.y >= start.y ? 1 : -1
-        return CGRect(
-            x: signX > 0 ? start.x : start.x - width,
-            y: signY > 0 ? start.y : start.y - heightFromWidth,
-            width: width,
-            height: heightFromWidth
-        )
-    }
-
-    private func hitHandle(at point: CGPoint) -> ResizeHandle? {
-        let r = localSelectionRect
-        for handle in ResizeHandle.allCases {
-            let p = handle.point(in: r)
-            if hypot(p.x - point.x, p.y - point.y) < 12 {
-                return handle
-            }
-        }
-        return nil
-    }
-
-    private func resize(_ origin: CGRect, handle: ResizeHandle, to point: CGPoint) -> CGRect {
-        var r = origin
-        switch handle {
-        case .topLeft:
-            r.size.width = r.maxX - point.x
-            r.size.height = r.maxY - point.y
-            r.origin = point
-        case .topRight:
-            r.size.width = point.x - r.minX
-            r.size.height = r.maxY - point.y
-            r.origin.y = point.y
-        case .bottomLeft:
-            r.size.width = r.maxX - point.x
-            r.size.height = point.y - r.minY
-            r.origin.x = point.x
-        case .bottomRight:
-            r.size.width = point.x - r.minX
-            r.size.height = point.y - r.minY
-        case .top:
-            r.size.height = r.maxY - point.y
-            r.origin.y = point.y
-        case .bottom:
-            r.size.height = point.y - r.minY
-        case .left:
-            r.size.width = r.maxX - point.x
-            r.origin.x = point.x
-        case .right:
-            r.size.width = point.x - r.minX
-        }
-        if r.width < 20 { r.size.width = 20 }
-        if r.height < 20 { r.size.height = 20 }
-        return clampToScreen(r)
     }
 }
 
@@ -319,6 +167,7 @@ enum ResizeHandle: String, CaseIterable, Identifiable {
 
     var id: String { rawValue }
 
+    /// Point in SwiftUI local coords (Y grows downward) for a local selection rect.
     func point(in rect: CGRect) -> CGPoint {
         switch self {
         case .topLeft: return CGPoint(x: rect.minX, y: rect.minY)
@@ -329,6 +178,20 @@ enum ResizeHandle: String, CaseIterable, Identifiable {
         case .bottomLeft: return CGPoint(x: rect.minX, y: rect.maxY)
         case .bottom: return CGPoint(x: rect.midX, y: rect.maxY)
         case .bottomRight: return CGPoint(x: rect.maxX, y: rect.maxY)
+        }
+    }
+
+    /// Point in AppKit global coords (Y grows upward) for a global selection rect.
+    func appKitPoint(in rect: CGRect) -> CGPoint {
+        switch self {
+        case .topLeft: return CGPoint(x: rect.minX, y: rect.maxY)
+        case .top: return CGPoint(x: rect.midX, y: rect.maxY)
+        case .topRight: return CGPoint(x: rect.maxX, y: rect.maxY)
+        case .left: return CGPoint(x: rect.minX, y: rect.midY)
+        case .right: return CGPoint(x: rect.maxX, y: rect.midY)
+        case .bottomLeft: return CGPoint(x: rect.minX, y: rect.minY)
+        case .bottom: return CGPoint(x: rect.midX, y: rect.minY)
+        case .bottomRight: return CGPoint(x: rect.maxX, y: rect.minY)
         }
     }
 }

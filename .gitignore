@@ -1,5 +1,6 @@
 # Xcode
 DerivedData/
+.derivedData/
 build/
 *.xcuserstate
 xcuserdata/
@@ -25,5 +26,5 @@ xcuserdata/
 .env
 .env.*
 
-# Local docs (not tracked)
-Docs/
+# Local beginner guide (not tracked)
+docs/

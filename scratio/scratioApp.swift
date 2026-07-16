@@ -17,6 +17,7 @@ struct scratioApp: App {
                 .registerWindowRouter()
         }
         .defaultSize(width: 960, height: 640)
+        .windowResizability(.contentMinSize)
         .handlesExternalEvents(matching: Set(arrayLiteral: "gallery"))
         .commands {
             CommandGroup(replacing: .newItem) {
@@ -31,6 +32,8 @@ struct scratioApp: App {
             SettingsView()
                 .registerWindowRouter()
         }
+        .defaultSize(width: 520, height: 420)
+        .windowResizability(.contentMinSize)
     }
 }
 
@@ -77,9 +80,20 @@ private struct MenuBarContent: View {
 final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
+        AppState.shared.refreshScreenRecordingPermission()
 
         HotkeyManager.shared.reregisterFromPreferences {
             AppState.shared.startCapture()
+        }
+
+        NotificationCenter.default.addObserver(
+            forName: NSApplication.didBecomeActiveNotification,
+            object: nil,
+            queue: .main
+        ) { _ in
+            Task { @MainActor in
+                AppState.shared.refreshScreenRecordingPermission()
+            }
         }
 
         NotificationCenter.default.addObserver(
