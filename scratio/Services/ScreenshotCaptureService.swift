@@ -113,24 +113,36 @@ enum ScreenshotCaptureService {
         }
     }
 
-    /// Returns on-screen app windows frontmost-first (lower `windowLayer` first, then list order).
+    /// Returns on-screen app windows frontmost-first (lower `windowLayer` first; later source index wins ties).
     static func fetchWindows() async throws -> [SCWindow] {
         try await ensurePermission()
         let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
         let ownPID = ProcessInfo.processInfo.processIdentifier
-        return content.windows
-            .filter { window in
-                guard let app = window.owningApplication else { return false }
-                if app.processID == ownPID { return false }
-                if window.frame.width < 40 || window.frame.height < 40 { return false }
-                return window.isOnScreen
-            }
+        let filtered = content.windows.enumerated().filter { _, window in
+            guard let app = window.owningApplication else { return false }
+            if app.processID == ownPID { return false }
+            if window.frame.width < 40 || window.frame.height < 40 { return false }
+            return window.isOnScreen
+        }
+        return filtered
             .sorted { lhs, rhs in
-                if lhs.windowLayer != rhs.windowLayer {
-                    return lhs.windowLayer < rhs.windowLayer
+                if lhs.element.windowLayer != rhs.element.windowLayer {
+                    return lhs.element.windowLayer < rhs.element.windowLayer
                 }
-                return false
+                // Later in SCShareableContent is preferred when layers match.
+                return lhs.offset > rhs.offset
             }
+            .map(\.element)
+    }
+
+    /// Hit-tests `location` (AppKit global) against windows ordered frontmost-first.
+    static func windowAt(
+        point location: CGPoint,
+        in windows: [SCWindow]
+    ) -> SCWindow? {
+        windows.first { window in
+            convertSCWindowFrameToAppKit(window.frame).contains(location)
+        }
     }
 
     private static func captureWindowIndependent(_ window: SCWindow) async throws -> NSImage {

@@ -29,7 +29,9 @@ struct SelectionOverlayView: View {
                     selectionChrome
                 }
 
-                if session.mode == .window, session.hoveredWindowFrame != .zero {
+                if session.mode == .window,
+                   session.hoveredWindowFrame != .zero,
+                   session.hoveredWindowFrame.intersects(screenFrame) {
                     windowHighlight
                 }
 
@@ -38,7 +40,7 @@ struct SelectionOverlayView: View {
                 }
             }
             .contentShape(Rectangle())
-            .allowsHitTesting(session.mode == .selection)
+            .allowsHitTesting(session.mode != .display)
         }
         .ignoresSafeArea()
     }
@@ -52,7 +54,11 @@ struct SelectionOverlayView: View {
         case .selection:
             return localSelectionRect
         case .window:
-            return session.hoveredWindowFrame == .zero ? .zero : toLocal(session.hoveredWindowFrame)
+            guard session.hoveredWindowFrame != .zero,
+                  session.hoveredWindowFrame.intersects(screenFrame) else {
+                return .zero
+            }
+            return toLocal(session.hoveredWindowFrame)
         case .display:
             // Clear cutout only on the hovered/selected display; others stay dimmed.
             return isSelectedDisplay

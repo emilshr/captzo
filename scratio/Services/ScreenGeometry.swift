@@ -78,6 +78,31 @@ enum ScreenGeometry {
         frames.firstIndex { $0.contains(point) }
     }
 
+    /// Candidate for window hit-testing (AppKit frames).
+    struct WindowHitCandidate: Equatable, Sendable {
+        let id: UInt32
+        let frame: CGRect
+        let windowLayer: Int
+        /// Index in the source list (later = preferred when layers tie).
+        let sourceIndex: Int
+    }
+
+    /// Frontmost window whose AppKit frame contains `point`.
+    /// Lower `windowLayer` wins; equal layers prefer higher `sourceIndex`.
+    static func frontmostWindow(
+        at point: CGPoint,
+        in candidates: [WindowHitCandidate]
+    ) -> WindowHitCandidate? {
+        let hits = candidates.filter { $0.frame.contains(point) }
+        guard !hits.isEmpty else { return nil }
+        return hits.min { lhs, rhs in
+            if lhs.windowLayer != rhs.windowLayer {
+                return lhs.windowLayer < rhs.windowLayer
+            }
+            return lhs.sourceIndex > rhs.sourceIndex
+        }
+    }
+
     /// Whether a toolbar origin is still on a known screen (top-left of toolbar frame intersects any screen).
     static func isValidToolbarOrigin(_ origin: CGPoint, size: CGSize, in frames: [CGRect]) -> Bool {
         let rect = CGRect(origin: origin, size: size)

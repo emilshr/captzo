@@ -243,6 +243,62 @@ struct WindowCaptureConfigTests {
     }
 }
 
+struct WindowHitTestingTests {
+    @Test func frontmostPrefersLowerLayer() {
+        let back = ScreenGeometry.WindowHitCandidate(
+            id: 1,
+            frame: CGRect(x: 0, y: 0, width: 200, height: 200),
+            windowLayer: 5,
+            sourceIndex: 0
+        )
+        let front = ScreenGeometry.WindowHitCandidate(
+            id: 2,
+            frame: CGRect(x: 50, y: 50, width: 100, height: 100),
+            windowLayer: 0,
+            sourceIndex: 1
+        )
+        let hit = ScreenGeometry.frontmostWindow(
+            at: CGPoint(x: 75, y: 75),
+            in: [back, front]
+        )
+        #expect(hit?.id == 2)
+    }
+
+    @Test func frontmostPrefersLaterSourceIndexWhenLayersTie() {
+        let earlier = ScreenGeometry.WindowHitCandidate(
+            id: 10,
+            frame: CGRect(x: 0, y: 0, width: 300, height: 300),
+            windowLayer: 0,
+            sourceIndex: 0
+        )
+        let later = ScreenGeometry.WindowHitCandidate(
+            id: 20,
+            frame: CGRect(x: 0, y: 0, width: 200, height: 200),
+            windowLayer: 0,
+            sourceIndex: 3
+        )
+        let hit = ScreenGeometry.frontmostWindow(
+            at: CGPoint(x: 50, y: 50),
+            in: [earlier, later]
+        )
+        #expect(hit?.id == 20)
+    }
+
+    @Test func frontmostReturnsNilOutsideAllFrames() {
+        let candidate = ScreenGeometry.WindowHitCandidate(
+            id: 1,
+            frame: CGRect(x: 0, y: 0, width: 100, height: 100),
+            windowLayer: 0,
+            sourceIndex: 0
+        )
+        let hit = ScreenGeometry.frontmostWindow(
+            at: CGPoint(x: 500, y: 500),
+            in: [candidate]
+        )
+        #expect(hit == nil)
+    }
+}
+
 struct DisplaySelectionTests {
     @Test func screenFrameIndexFindsContainingDisplay() {
         let frames = [

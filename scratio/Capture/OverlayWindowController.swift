@@ -46,6 +46,8 @@ final class OverlayWindowController: NSObject, NSWindowDelegate {
             self?.updateOverlayMousePassthrough()
             if newMode == .display {
                 self?.session.selectedDisplayID = CaptureSessionState.displayID(at: NSEvent.mouseLocation)
+            } else if newMode == .window {
+                self?.scheduleHoverUpdate(at: NSEvent.mouseLocation)
             }
         }
         session.onAspectRatioChange = { newRatio in
@@ -87,6 +89,9 @@ final class OverlayWindowController: NSObject, NSWindowDelegate {
         makeOverlayKey(under: NSEvent.mouseLocation)
 
         installMonitors()
+        if mode == .window {
+            scheduleHoverUpdate(at: NSEvent.mouseLocation)
+        }
         NSApp.activate(ignoringOtherApps: true)
     }
 
@@ -172,8 +177,8 @@ final class OverlayWindowController: NSObject, NSWindowDelegate {
     }
 
     private func updateOverlayMousePassthrough() {
-        // Selection needs hit-testing to begin drags; window/display stay click-through (hover-only).
-        let passThrough = session.mode != .selection
+        // Selection and window need hit-testing; display stays click-through (hover only).
+        let passThrough = session.mode == .display
         for window in overlayWindows {
             window.ignoresMouseEvents = passThrough
         }
@@ -213,7 +218,10 @@ final class OverlayWindowController: NSObject, NSWindowDelegate {
         }
 
         mouseDownLocal = NSEvent.addLocalMonitorForEvents(matching: .leftMouseDown) { [weak self] event in
-            self?.handleSelectionMouseDown()
+            guard let self else { return event }
+            if self.handleMouseDown() {
+                return nil
+            }
             return event
         }
         mouseDraggedLocal = NSEvent.addLocalMonitorForEvents(matching: .leftMouseDragged) { [weak self] event in
@@ -273,13 +281,26 @@ final class OverlayWindowController: NSObject, NSWindowDelegate {
         }
     }
 
-    private func handleSelectionMouseDown() {
-        guard session.mode == .selection else { return }
+    /// Returns `true` when the event should be swallowed.
+    private func handleMouseDown() -> Bool {
+        let location = NSEvent.mouseLocation
         // Ignore clicks on the toolbar panel.
-        if let toolbar = toolbarWindow, toolbar.frame.contains(NSEvent.mouseLocation) {
-            return
+        if let toolbar = toolbarWindow, toolbar.frame.contains(location) {
+            return false
         }
-        session.beginSelectionInteraction(at: NSEvent.mouseLocation)
+
+        switch session.mode {
+        case .selection:
+            session.beginSelectionInteraction(at: location)
+            return false
+        case .window:
+            let windowID = session.hoveredWindowID ?? session.selectedWindowID
+            guard windowID != nil else { return true }
+            session.onRequestCapture?()
+            return true
+        case .display:
+            return false
+        }
     }
 
     private func handleSelectionMouseDragged() {
@@ -308,10 +329,7 @@ final class OverlayWindowController: NSObject, NSWindowDelegate {
             let windows = try await ScreenshotCaptureService.fetchWindows()
             guard !Task.isCancelled, generation == hoverGeneration else { return }
 
-            let hit = windows.first { window in
-                let frame = ScreenshotCaptureService.convertSCWindowFrameToAppKit(window.frame)
-                return frame.contains(location)
-            }
+            let hit = ScreenshotCaptureService.windowAt(point: location, in: windows)
             guard generation == hoverGeneration else { return }
 
             session.hoveredWindowID = hit?.windowID
