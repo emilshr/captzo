@@ -297,6 +297,69 @@ struct WindowHitTestingTests {
         )
         #expect(hit == nil)
     }
+
+    @Test func frontmostWindowIDPrefersCGWindowOrder() {
+        let back = ScreenGeometry.WindowHitCandidate(
+            id: 1,
+            frame: CGRect(x: 0, y: 0, width: 300, height: 300),
+            windowLayer: 0,
+            sourceIndex: 0
+        )
+        let front = ScreenGeometry.WindowHitCandidate(
+            id: 2,
+            frame: CGRect(x: 50, y: 50, width: 200, height: 200),
+            windowLayer: 0,
+            sourceIndex: 1
+        )
+        let hit = ScreenGeometry.frontmostWindowID(
+            at: CGPoint(x: 100, y: 100),
+            orderedWindowIDs: [2, 1],
+            candidates: [back, front]
+        )
+        #expect(hit == 2)
+    }
+
+    @Test func frontmostWindowIDSkipsWindowsNotUnderCursor() {
+        let left = ScreenGeometry.WindowHitCandidate(
+            id: 10,
+            frame: CGRect(x: 0, y: 0, width: 100, height: 100),
+            windowLayer: 0,
+            sourceIndex: 0
+        )
+        let right = ScreenGeometry.WindowHitCandidate(
+            id: 20,
+            frame: CGRect(x: 200, y: 0, width: 100, height: 100),
+            windowLayer: 0,
+            sourceIndex: 1
+        )
+        let hit = ScreenGeometry.frontmostWindowID(
+            at: CGPoint(x: 250, y: 50),
+            orderedWindowIDs: [10, 20],
+            candidates: [left, right]
+        )
+        #expect(hit == 20)
+    }
+
+    @Test func pickableWindowTitleRequiresNonEmptyValue() {
+        #expect(ScreenGeometry.isPickableWindowTitle("Finder"))
+        #expect(!ScreenGeometry.isPickableWindowTitle(""))
+        #expect(!ScreenGeometry.isPickableWindowTitle("   "))
+        #expect(!ScreenGeometry.isPickableWindowTitle(nil))
+    }
+
+    @Test func pickableWindowLayerAllowsNormalWindowsOnly() {
+        #expect(ScreenGeometry.isPickableWindowLayer(0))
+        #expect(!ScreenGeometry.isPickableWindowLayer(5))
+        #expect(!ScreenGeometry.isPickableWindowLayer(-1))
+    }
+
+    @Test func nearDisplaySizedDetectsBackdropFrames() {
+        let display = CGRect(x: 0, y: 0, width: 1440, height: 900)
+        let backdrop = CGRect(x: 0, y: 0, width: 1400, height: 880)
+        let normal = CGRect(x: 100, y: 100, width: 800, height: 600)
+        #expect(ScreenGeometry.isNearDisplaySized(frame: backdrop, displayFrames: [display]))
+        #expect(!ScreenGeometry.isNearDisplaySized(frame: normal, displayFrames: [display]))
+    }
 }
 
 struct DisplaySelectionTests {

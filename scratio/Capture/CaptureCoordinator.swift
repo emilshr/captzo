@@ -84,7 +84,8 @@ final class CaptureCoordinator {
                 return
             } catch {
                 guard !Task.isCancelled else { return }
-                presentCaptureError(error)
+                let mapped = ScreenshotCaptureService.mapCaptureError(error)
+                presentCaptureError(mapped)
                 cancelHandler?()
             }
         }
@@ -93,6 +94,16 @@ final class CaptureCoordinator {
     private func presentCaptureError(_ error: Error) {
         NSApp.setActivationPolicy(.regular)
         NSApp.activate(ignoringOtherApps: true)
+        if let captureError = error as? ScreenshotCaptureService.CaptureError,
+           case .permissionDenied = captureError {
+            AppState.shared.showCapturePermissionError(captureError)
+            return
+        }
+        if let captureError = error as? ScreenshotCaptureService.CaptureError,
+           case .permissionRestartRequired = captureError {
+            AppState.shared.showCapturePermissionError(captureError)
+            return
+        }
         let alert = NSAlert(error: error)
         alert.runModal()
     }

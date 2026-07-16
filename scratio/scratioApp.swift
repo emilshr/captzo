@@ -17,6 +17,7 @@ struct scratioApp: App {
                 .registerWindowRouter()
         }
         .defaultSize(width: 960, height: 640)
+        .windowResizability(.contentMinSize)
         .handlesExternalEvents(matching: Set(arrayLiteral: "gallery"))
         .commands {
             CommandGroup(replacing: .newItem) {
@@ -31,6 +32,8 @@ struct scratioApp: App {
             SettingsView()
                 .registerWindowRouter()
         }
+        .defaultSize(width: 520, height: 420)
+        .windowResizability(.contentMinSize)
     }
 }
 

@@ -47,15 +47,31 @@ final class AppState {
         needsScreenRecordingPermission = !ScreenshotCaptureService.hasScreenCaptureAccess()
     }
 
+    func requestScreenRecordingPermission() {
+        _ = ScreenshotCaptureService.requestScreenCaptureAccess()
+        refreshScreenRecordingPermission()
+        if needsScreenRecordingPermission {
+            permissionAlertMessage = ScreenshotCaptureService.permissionDeniedMessage
+            showPermissionAlert = true
+        }
+    }
+
+    func showCapturePermissionError(_ error: ScreenshotCaptureService.CaptureError) {
+        permissionAlertMessage = error.localizedDescription ?? "Capture failed."
+        showPermissionAlert = true
+        needsScreenRecordingPermission = !ScreenshotCaptureService.hasScreenCaptureAccess()
+        isCapturing = false
+    }
+
     func startCapture() {
         guard !isCapturing else { return }
 
         refreshScreenRecordingPermission()
         if !ScreenshotCaptureService.hasScreenCaptureAccess() {
-            let granted = ScreenshotCaptureService.requestScreenCaptureAccess()
+            _ = ScreenshotCaptureService.requestScreenCaptureAccess()
             refreshScreenRecordingPermission()
-            if !granted && !ScreenshotCaptureService.hasScreenCaptureAccess() {
-                permissionAlertMessage = ScreenshotCaptureService.CaptureError.permissionDenied.localizedDescription
+            if !ScreenshotCaptureService.hasScreenCaptureAccess() {
+                permissionAlertMessage = ScreenshotCaptureService.permissionDeniedMessage
                 showPermissionAlert = true
                 needsScreenRecordingPermission = true
                 return

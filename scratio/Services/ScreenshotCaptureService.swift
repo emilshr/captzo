@@ -5,8 +5,12 @@ import Foundation
 import ScreenCaptureKit
 
 enum ScreenshotCaptureService {
+    static let screenRecordingRestartHint =
+        "After granting or changing Screen Recording permission, quit Scratio and relaunch it for capture to work."
+
     enum CaptureError: LocalizedError {
         case permissionDenied
+        case permissionRestartRequired
         case noDisplay
         case captureFailed(String)
         case windowNotFound
@@ -14,7 +18,9 @@ enum ScreenshotCaptureService {
         var errorDescription: String? {
             switch self {
             case .permissionDenied:
-                return "Screen Recording permission is required. Enable it in System Settings → Privacy & Security → Screen Recording."
+                return permissionDeniedMessage
+            case .permissionRestartRequired:
+                return permissionRestartRequiredMessage
             case .noDisplay:
                 return "No display available to capture."
             case .captureFailed(let message):
@@ -23,6 +29,14 @@ enum ScreenshotCaptureService {
                 return "Selected window is no longer available."
             }
         }
+    }
+
+    static var permissionDeniedMessage: String {
+        "Screen Recording permission is required. Enable Scratio in System Settings → Privacy & Security → Screen Recording. \(screenRecordingRestartHint)"
+    }
+
+    static var permissionRestartRequiredMessage: String {
+        "Screen Recording permission changed. \(screenRecordingRestartHint)"
     }
 
     static func hasScreenCaptureAccess() -> Bool {
@@ -113,36 +127,76 @@ enum ScreenshotCaptureService {
         }
     }
 
-    /// Returns on-screen app windows frontmost-first (lower `windowLayer` first; later source index wins ties).
+    /// Window IDs from front to back (CGWindowList order).
+    static func orderedOnScreenWindowIDs() -> [CGWindowID] {
+        guard let list = CGWindowListCopyWindowInfo(
+            [.optionOnScreenOnly, .excludeDesktopElements],
+            kCGNullWindowID
+        ) as? [[String: Any]] else {
+            return []
+        }
+        return list.compactMap { info in
+            guard let num = info[kCGWindowNumber as String] as? NSNumber else { return nil }
+            return CGWindowID(num.uint32Value)
+        }
+    }
+
+    /// Returns on-screen app windows suitable for window capture picking.
     static func fetchWindows() async throws -> [SCWindow] {
         try await ensurePermission()
         let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
         let ownPID = ProcessInfo.processInfo.processIdentifier
-        let filtered = content.windows.enumerated().filter { _, window in
-            guard let app = window.owningApplication else { return false }
-            if app.processID == ownPID { return false }
-            if window.frame.width < 40 || window.frame.height < 40 { return false }
-            return window.isOnScreen
+        let displayFrames = NSScreen.screens.map(\.frame)
+        return content.windows.filter { window in
+            isPickableWindow(window, ownPID: ownPID, displayFrames: displayFrames)
         }
-        return filtered
-            .sorted { lhs, rhs in
-                if lhs.element.windowLayer != rhs.element.windowLayer {
-                    return lhs.element.windowLayer < rhs.element.windowLayer
-                }
-                // Later in SCShareableContent is preferred when layers match.
-                return lhs.offset > rhs.offset
-            }
-            .map(\.element)
     }
 
-    /// Hit-tests `location` (AppKit global) against windows ordered frontmost-first.
+    static func isPickableWindow(
+        _ window: SCWindow,
+        ownPID: pid_t = ProcessInfo.processInfo.processIdentifier,
+        displayFrames: [CGRect] = NSScreen.screens.map(\.frame)
+    ) -> Bool {
+        guard let app = window.owningApplication else { return false }
+        if app.processID == ownPID { return false }
+        if window.frame.width < 40 || window.frame.height < 40 { return false }
+        if !window.isOnScreen { return false }
+        if !ScreenGeometry.isPickableWindowTitle(window.title) { return false }
+        if !ScreenGeometry.isPickableWindowLayer(window.windowLayer) { return false }
+        let appKitFrame = convertSCWindowFrameToAppKit(window.frame)
+        if ScreenGeometry.isNearDisplaySized(frame: appKitFrame, displayFrames: displayFrames) {
+            return false
+        }
+        return true
+    }
+
+    /// Hit-tests `location` (AppKit global) using CGWindow z-order, then layer fallback.
     static func windowAt(
         point location: CGPoint,
         in windows: [SCWindow]
     ) -> SCWindow? {
-        windows.first { window in
-            convertSCWindowFrameToAppKit(window.frame).contains(location)
+        let candidates = windows.enumerated().map { index, window in
+            ScreenGeometry.WindowHitCandidate(
+                id: window.windowID,
+                frame: convertSCWindowFrameToAppKit(window.frame),
+                windowLayer: window.windowLayer,
+                sourceIndex: index
+            )
         }
+        let windowByID = Dictionary(uniqueKeysWithValues: windows.map { ($0.windowID, $0) })
+
+        if let hitID = ScreenGeometry.frontmostWindowID(
+            at: location,
+            orderedWindowIDs: orderedOnScreenWindowIDs(),
+            candidates: candidates
+        ), let hit = windowByID[hitID] {
+            return hit
+        }
+
+        if let fallback = ScreenGeometry.frontmostWindow(at: location, in: candidates) {
+            return windowByID[fallback.id]
+        }
+        return nil
     }
 
     private static func captureWindowIndependent(_ window: SCWindow) async throws -> NSImage {
@@ -215,10 +269,20 @@ enum ScreenshotCaptureService {
 
     private static func ensurePermission() async throws {
         if hasScreenCaptureAccess() { return }
-        let granted = requestScreenCaptureAccess()
-        if !granted && !hasScreenCaptureAccess() {
-            throw CaptureError.permissionDenied
+        _ = requestScreenCaptureAccess()
+        if hasScreenCaptureAccess() { return }
+        throw CaptureError.permissionDenied
+    }
+
+    static func mapCaptureError(_ error: Error) -> CaptureError {
+        if let captureError = error as? CaptureError {
+            return captureError
         }
+        let description = error.localizedDescription.lowercased()
+        if description.contains("declined") || description.contains("permission") {
+            return hasScreenCaptureAccess() ? .permissionRestartRequired : .permissionDenied
+        }
+        return .captureFailed(error.localizedDescription)
     }
 
     /// Converts AppKit global rect (origin bottom-left) to Quartz/SCK space using the primary screen baseline.

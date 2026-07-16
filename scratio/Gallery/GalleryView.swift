@@ -83,7 +83,7 @@ struct GalleryView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Screen Recording permission required")
                     .font(.headline)
-                Text("Without this permission the capture overlay cannot work. Enable Scratio in System Settings → Privacy & Security → Screen Recording.")
+                Text("Without this permission the capture overlay cannot work. Enable Scratio in System Settings → Privacy & Security → Screen Recording, then quit and relaunch Scratio.")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -100,8 +100,7 @@ struct GalleryView: View {
             Button("Check Again") {
                 appState.refreshScreenRecordingPermission()
                 if appState.needsScreenRecordingPermission {
-                    _ = ScreenshotCaptureService.requestScreenCaptureAccess()
-                    appState.refreshScreenRecordingPermission()
+                    appState.requestScreenRecordingPermission()
                 }
             }
             .controlSize(.small)

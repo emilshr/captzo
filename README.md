@@ -57,3 +57,15 @@ That runs [`.github/workflows/release-dmg.yml`](.github/workflows/release-dmg.ym
 # Unit tests
 xcodebuild test -scheme scratio -destination 'platform=macOS' -only-testing:scratioTests
 ```
+
+### Screen Recording permission (debugging)
+
+macOS ties Screen Recording to your app’s code signature and process. After granting or revoking permission, **quit Scratio and relaunch** (in Xcode: Stop, then Run again) before capture will work.
+
+Recommended workflow:
+
+1. Use **Apple Development** signing with a stable team (not ad-hoc / “Sign to Run Locally”) so TCC remembers the app across builds.
+2. Grant Screen Recording once, Stop in Xcode, Run again, and leave the toggle on.
+3. To reset for testing: `tccutil reset ScreenCapture emilshr.scratio`, then Stop → Run → grant → Stop → Run again.
+
+Avoid repeatedly toggling the permission checkbox during a debug session; appearing in the list does not mean the current process has access.

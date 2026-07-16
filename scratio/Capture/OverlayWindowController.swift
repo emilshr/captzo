@@ -24,6 +24,9 @@ final class OverlayWindowController: NSObject, NSWindowDelegate {
     private var mouseUpGlobal: Any?
     private var hoverTask: Task<Void, Never>?
     private var hoverGeneration: UInt64 = 0
+    private var cachedWindows: [SCWindow] = []
+    private var windowsCacheTime: Date = .distantPast
+    private let windowsCacheTTL: TimeInterval = 0.25
 
     private(set) var session = CaptureSessionState()
 
@@ -98,6 +101,8 @@ final class OverlayWindowController: NSObject, NSWindowDelegate {
     func hide() {
         hoverTask?.cancel()
         hoverTask = nil
+        cachedWindows = []
+        windowsCacheTime = .distantPast
         removeMonitors()
         session.endSelectionInteraction(persist: false)
         for window in overlayWindows {
@@ -326,9 +331,10 @@ final class OverlayWindowController: NSObject, NSWindowDelegate {
 
     private func updateHoveredWindow(at location: NSPoint, generation: UInt64) async {
         do {
-            let windows = try await ScreenshotCaptureService.fetchWindows()
+            let windows = try await fetchWindowsForHover()
             guard !Task.isCancelled, generation == hoverGeneration else { return }
 
+            let location = NSEvent.mouseLocation
             let hit = ScreenshotCaptureService.windowAt(point: location, in: windows)
             guard generation == hoverGeneration else { return }
 
@@ -342,6 +348,17 @@ final class OverlayWindowController: NSObject, NSWindowDelegate {
         } catch {
             // Ignore hover failures during permission prompts
         }
+    }
+
+    private func fetchWindowsForHover() async throws -> [SCWindow] {
+        let now = Date()
+        if now.timeIntervalSince(windowsCacheTime) < windowsCacheTTL, !cachedWindows.isEmpty {
+            return cachedWindows
+        }
+        let windows = try await ScreenshotCaptureService.fetchWindows()
+        cachedWindows = windows
+        windowsCacheTime = now
+        return windows
     }
 
     // MARK: - NSWindowDelegate

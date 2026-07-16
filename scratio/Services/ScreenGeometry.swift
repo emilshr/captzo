@@ -103,6 +103,47 @@ enum ScreenGeometry {
         }
     }
 
+    /// Frontmost pickable window using CGWindowList order (front to back).
+    static func frontmostWindowID(
+        at point: CGPoint,
+        orderedWindowIDs: [UInt32],
+        candidates: [WindowHitCandidate]
+    ) -> UInt32? {
+        let candidateMap = Dictionary(uniqueKeysWithValues: candidates.map { ($0.id, $0) })
+        for windowID in orderedWindowIDs {
+            guard let candidate = candidateMap[windowID],
+                  candidate.frame.contains(point) else {
+                continue
+            }
+            return windowID
+        }
+        return nil
+    }
+
+    static func isPickableWindowTitle(_ title: String?) -> Bool {
+        guard let title else { return false }
+        return !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    static func isPickableWindowLayer(_ layer: Int) -> Bool {
+        layer == 0
+    }
+
+    /// True when a frame covers most of a display (backdrop / full-screen helper windows).
+    static func isNearDisplaySized(
+        frame: CGRect,
+        displayFrames: [CGRect],
+        areaThreshold: CGFloat = 0.95
+    ) -> Bool {
+        let area = frame.width * frame.height
+        guard area > 0 else { return false }
+        return displayFrames.contains { display in
+            let displayArea = display.width * display.height
+            guard displayArea > 0 else { return false }
+            return frame.intersects(display) && area >= displayArea * areaThreshold
+        }
+    }
+
     /// Whether a toolbar origin is still on a known screen (top-left of toolbar frame intersects any screen).
     static func isValidToolbarOrigin(_ origin: CGPoint, size: CGSize, in frames: [CGRect]) -> Bool {
         let rect = CGRect(origin: origin, size: size)
