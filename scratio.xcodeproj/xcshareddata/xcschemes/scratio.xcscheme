@@ -16,7 +16,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "20BA4A2A3006581C00560FBA"
-               BuildableName = "scratio.app"
+               BuildableName = "Captzo.app"
                BlueprintName = "scratio"
                ReferencedContainer = "container:scratio.xcodeproj">
             </BuildableReference>
@@ -69,7 +69,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "20BA4A2A3006581C00560FBA"
-            BuildableName = "scratio.app"
+            BuildableName = "Captzo.app"
             BlueprintName = "scratio"
             ReferencedContainer = "container:scratio.xcodeproj">
          </BuildableReference>
@@ -86,7 +86,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "20BA4A2A3006581C00560FBA"
-            BuildableName = "scratio.app"
+            BuildableName = "Captzo.app"
             BlueprintName = "scratio"
             ReferencedContainer = "container:scratio.xcodeproj">
          </BuildableReference>
