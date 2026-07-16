@@ -73,7 +73,7 @@ struct CaptureToolbarView: View {
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 12)
-        .background(.ultraThinMaterial, in: Capsule())
+        .scratioGlassBackground(Capsule())
         .overlay(
             Capsule()
                 .strokeBorder(Color.white.opacity(0.15), lineWidth: 1)

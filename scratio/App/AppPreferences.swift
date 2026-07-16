@@ -15,10 +15,12 @@ enum AppPreferences {
     static let captureModeKey = "captureMode"
     static let selectionRectKey = "selectionRect"
     static let toolbarOriginKey = "toolbarOrigin"
+    static let clipboardToastMessageKey = "clipboardToastMessage"
 
     /// Default: ⌘⇧6
     static let defaultHotkeyKeyCode: UInt32 = UInt32(kVK_ANSI_6)
     static let defaultHotkeyModifiers: UInt32 = UInt32(cmdKey | shiftKey)
+    static let defaultClipboardToastMessage = "Copied to clipboard"
 
     static var aspectRatio: AspectRatioOption {
         get {
@@ -77,6 +79,21 @@ enum AppPreferences {
     static var openGalleryAfterCapture: Bool {
         get { defaults.bool(forKey: openGalleryAfterCaptureKey) }
         set { defaults.set(newValue, forKey: openGalleryAfterCaptureKey) }
+    }
+
+    static var clipboardToastMessage: String {
+        get {
+            let saved = defaults.string(forKey: clipboardToastMessageKey)?
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            if let saved, !saved.isEmpty {
+                return saved
+            }
+            return defaultClipboardToastMessage
+        }
+        set {
+            let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
+            defaults.set(trimmed, forKey: clipboardToastMessageKey)
+        }
     }
 
     static var selectionRect: CGRect? {

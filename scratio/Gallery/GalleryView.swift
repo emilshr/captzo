@@ -19,7 +19,7 @@ struct GalleryView: View {
             )) {
                 Section("Library") {
                     ForEach(appState.screenshots) { shot in
-                        Text(shot.createdAt, format: .dateTime)
+                        Text(shot.createdAt.scratioSidebarLabel())
                             .tag(shot.id)
                     }
                 }
