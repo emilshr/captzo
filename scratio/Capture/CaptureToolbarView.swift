@@ -1,4 +1,3 @@
-import AppKit
 import SwiftUI
 
 struct CaptureToolbarView: View {
@@ -129,13 +128,11 @@ struct CaptureToolbarView: View {
             session.setAspectRatio(option)
         } label: {
             HStack(spacing: 5) {
-                Image(nsImage: AspectRatioGlyph.nsImage(
+                AspectRatioGlyph(
                     option: option,
                     size: 14,
-                    color: isSelected
-                        ? NSColor(Color.accentColor)
-                        : NSColor.white.withAlphaComponent(0.85)
-                ))
+                    color: isSelected ? Color.accentColor : Color.white.opacity(0.85)
+                )
                 Text(option.displayName)
                     .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(isSelected ? Color.accentColor : Color.white.opacity(0.85))

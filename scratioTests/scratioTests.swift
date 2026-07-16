@@ -403,3 +403,95 @@ struct DisplaySelectionTests {
         #expect(abs(origin.y - 36) < 0.001)
     }
 }
+
+struct AspectRatioGlyphGeometryTests {
+    @Test func sixteenByNineGlyphIsWiderThanTall() {
+        let rect = AspectRatioGlyph.glyphRect(
+            for: .sixteenToNine,
+            in: CGSize(width: 18, height: 18)
+        )
+        #expect(rect.width > rect.height)
+        #expect(abs((rect.width / rect.height) - (16.0 / 9.0)) < 0.05)
+    }
+
+    @Test func nineBySixteenGlyphIsTallerThanWide() {
+        let rect = AspectRatioGlyph.glyphRect(
+            for: .nineToSixteen,
+            in: CGSize(width: 18, height: 18)
+        )
+        #expect(rect.height > rect.width)
+        #expect(abs((rect.width / rect.height) - (9.0 / 16.0)) < 0.05)
+    }
+
+    @Test func oneToOneGlyphIsSquare() {
+        let rect = AspectRatioGlyph.glyphRect(
+            for: .oneToOne,
+            in: CGSize(width: 18, height: 18)
+        )
+        #expect(abs(rect.width - rect.height) < 0.01)
+    }
+}
+
+struct AspectLockedClampTests {
+    @Test func clampAspectLockedPreservesSixteenByNine() {
+        let screens = [CGRect(x: 0, y: 0, width: 800, height: 600)]
+        let oversized = CGRect(x: -50, y: -50, width: 900, height: 900)
+        let clamped = ScreenGeometry.clampAspectLockedRect(
+            oversized,
+            ratio: 16.0 / 9.0,
+            toScreens: screens
+        )
+        #expect(clamped.width <= 800 + 0.01)
+        #expect(clamped.height <= 600 + 0.01)
+        #expect(abs((clamped.width / clamped.height) - (16.0 / 9.0)) < 0.02)
+        #expect(screens[0].contains(CGPoint(x: clamped.midX, y: clamped.midY)))
+    }
+
+    @Test func clampAspectLockedFitsNearEdge() {
+        let screens = [CGRect(x: 0, y: 0, width: 1000, height: 800)]
+        let nearEdge = CGRect(x: 900, y: 700, width: 320, height: 180)
+        let clamped = ScreenGeometry.clampAspectLockedRect(
+            nearEdge,
+            ratio: 16.0 / 9.0,
+            toScreens: screens
+        )
+        #expect(abs((clamped.width / clamped.height) - (16.0 / 9.0)) < 0.02)
+        #expect(clamped.maxX <= 1000 + 0.01)
+        #expect(clamped.maxY <= 800 + 0.01)
+    }
+}
+
+@MainActor
+struct GalleryFilterSelectionTests {
+    @Test func pruneSelectionDropsHiddenAspectRatios() {
+        let state = AppState.shared
+        let previousFilter = state.aspectRatioFilter
+        let previousSelection = state.selectedScreenshotIDs
+        let previousLast = state.lastSelectedScreenshotID
+        defer {
+            state.aspectRatioFilter = previousFilter
+            state.selectedScreenshotIDs = previousSelection
+            state.lastSelectedScreenshotID = previousLast
+        }
+
+        let visible = CapturedScreenshot(
+            id: UUID(),
+            fileURL: URL(fileURLWithPath: "/tmp/a.png"),
+            createdAt: Date(),
+            aspectRatioRaw: AspectRatioOption.oneToOne.rawValue
+        )
+        let hidden = CapturedScreenshot(
+            id: UUID(),
+            fileURL: URL(fileURLWithPath: "/tmp/b.png"),
+            createdAt: Date(),
+            aspectRatioRaw: AspectRatioOption.sixteenToNine.rawValue
+        )
+        state.screenshots = [visible, hidden]
+        state.selectedScreenshotIDs = [visible.id, hidden.id]
+        state.lastSelectedScreenshotID = hidden.id
+        state.aspectRatioFilter = .oneToOne
+
+        #expect(state.selectedScreenshotIDs == [visible.id])
+        #expect(state.lastSelectedScreenshotID == visible.id)
+    }
+}

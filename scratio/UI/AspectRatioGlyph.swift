@@ -27,9 +27,14 @@ struct AspectRatioGlyph: View {
         size: CGFloat = 16,
         color: NSColor? = nil
     ) -> NSImage {
+        let stroke = color ?? NSColor.labelColor
+        let cacheKey = "\(option.rawValue)|\(Int(size * 100))|\(stroke.cacheKeyComponent)" as NSString
+        if let cached = glyphImageCache.object(forKey: cacheKey) {
+            return cached
+        }
+
         let pixelSize = NSSize(width: size, height: size)
-        return NSImage(size: pixelSize, flipped: false) { _ in
-            let stroke = color ?? NSColor.labelColor
+        let image = NSImage(size: pixelSize, flipped: false) { _ in
             stroke.withAlphaComponent(0.9).setStroke()
 
             let rect = glyphRect(for: option, in: CGSize(width: size, height: size))
@@ -40,6 +45,8 @@ struct AspectRatioGlyph: View {
             path.stroke()
             return true
         }
+        glyphImageCache.setObject(image, forKey: cacheKey)
+        return image
     }
 
     static func glyphRect(for option: AspectRatioOption, in canvasSize: CGSize) -> CGRect {
@@ -83,6 +90,23 @@ struct AspectRatioGlyph: View {
             y: inset + (available.height - fitted.height) / 2,
             width: fitted.width,
             height: fitted.height
+        )
+    }
+}
+
+private let glyphImageCache = NSCache<NSString, NSImage>()
+
+private extension NSColor {
+    var cacheKeyComponent: String {
+        guard let rgb = usingColorSpace(.deviceRGB) ?? usingColorSpace(.sRGB) else {
+            return "label"
+        }
+        return String(
+            format: "%.3f-%.3f-%.3f-%.3f",
+            rgb.redComponent,
+            rgb.greenComponent,
+            rgb.blueComponent,
+            rgb.alphaComponent
         )
     }
 }

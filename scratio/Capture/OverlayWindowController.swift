@@ -36,7 +36,7 @@ final class OverlayWindowController: NSObject, NSWindowDelegate {
             onModeChange(newMode)
             self?.updateOverlayMousePassthrough()
             if newMode == .display {
-                self?.session.selectedDisplayID = CaptureSessionState.displayID(at: NSEvent.mouseLocation)
+                self?.session.pointer.selectedDisplayID = CaptureSessionState.displayID(at: NSEvent.mouseLocation)
             } else if newMode == .window {
                 self?.interaction?.scheduleHoverUpdate(at: NSEvent.mouseLocation)
             }
@@ -52,7 +52,7 @@ final class OverlayWindowController: NSObject, NSWindowDelegate {
         restoreSelection(aspectRatio: aspectRatio)
 
         if mode == .display {
-            session.selectedDisplayID = CaptureSessionState.displayID(at: NSEvent.mouseLocation)
+            session.pointer.selectedDisplayID = CaptureSessionState.displayID(at: NSEvent.mouseLocation)
         }
 
         for screen in NSScreen.screens {
@@ -67,7 +67,7 @@ final class OverlayWindowController: NSObject, NSWindowDelegate {
         makeOverlayKey(under: NSEvent.mouseLocation)
 
         let interaction = CaptureOverlayInteraction(
-            session: { [weak self] in self?.session ?? CaptureSessionState() },
+            session: { [weak self] in self?.session },
             toolbarFrame: { [weak self] in self?.toolbarWindow?.frame },
             onMakeOverlayKey: { [weak self] location in self?.makeOverlayKey(under: location) },
             onCursorUpdate: { [weak self] in self?.updateCaptureCursor() },
@@ -110,8 +110,7 @@ final class OverlayWindowController: NSObject, NSWindowDelegate {
            ScreenGeometry.isValidSelection(saved, onScreens: screens) {
             var restored = ScreenGeometry.clampRect(saved, toScreens: screens)
             if aspectRatio.isLocked {
-                restored = CaptureSessionState.constrain(restored, to: aspectRatio)
-                restored = ScreenGeometry.clampRect(restored, toScreens: screens)
+                restored = CaptureSessionState.clampSelection(saved, aspectRatio: aspectRatio)
             }
             session.selectionRect = restored
         } else {
@@ -190,6 +189,10 @@ final class OverlayWindowController: NSObject, NSWindowDelegate {
 
     private func makeOverlayKey(under location: CGPoint) {
         if session.isSelectionInteracting { return }
+        if let toolbar = toolbarWindow, toolbar.frame.contains(location) {
+            toolbar.makeKeyAndOrderFront(nil)
+            return
+        }
         if let match = overlayWindows.first(where: { $0.frame.contains(location) }) {
             match.makeKeyAndOrderFront(nil)
         } else {
@@ -200,8 +203,8 @@ final class OverlayWindowController: NSObject, NSWindowDelegate {
     private func updateCaptureCursor() {
         captureCursor.update(
             mode: session.mode,
-            hoveredWindowID: session.hoveredWindowID,
-            selectedWindowID: session.selectedWindowID,
+            hoveredWindowID: session.pointer.hoveredWindowID,
+            selectedWindowID: session.pointer.selectedWindowID,
             toolbarFrame: toolbarWindow?.frame
         )
     }

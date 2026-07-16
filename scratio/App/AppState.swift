@@ -31,7 +31,9 @@ final class AppState {
     }
 
     /// `nil` means show all aspect ratios.
-    var aspectRatioFilter: AspectRatioOption?
+    var aspectRatioFilter: AspectRatioOption? {
+        didSet { pruneSelectionToVisibleFilter() }
+    }
 
     /// Bumped when badge colors change so SwiftUI refreshes chips.
     var badgeColorRevision: Int = 0
@@ -60,6 +62,22 @@ final class AppState {
     var filteredScreenshots: [CapturedScreenshot] {
         guard let aspectRatioFilter else { return screenshots }
         return screenshots.filter { $0.aspectRatioRaw == aspectRatioFilter.rawValue }
+    }
+
+    /// Drops selection entries that are hidden by the current aspect filter.
+    func pruneSelectionToVisibleFilter() {
+        let visibleIDs = Set(filteredScreenshots.map(\.id))
+        let pruned = selectedScreenshotIDs.intersection(visibleIDs)
+        guard pruned != selectedScreenshotIDs else {
+            if let lastSelectedScreenshotID, !visibleIDs.contains(lastSelectedScreenshotID) {
+                self.lastSelectedScreenshotID = pruned.first
+            }
+            return
+        }
+        selectedScreenshotIDs = pruned
+        if let lastSelectedScreenshotID, !pruned.contains(lastSelectedScreenshotID) {
+            self.lastSelectedScreenshotID = pruned.first
+        }
     }
 
     var selectedScreenshots: [CapturedScreenshot] {

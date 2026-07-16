@@ -17,15 +17,17 @@ final class CaptureOverlayInteraction {
     private var cachedWindows: [SCWindow] = []
     private var windowsCacheTime: Date = .distantPast
     private let windowsCacheTTL: TimeInterval = 0.25
+    private var mouseMoveCoalesceScheduled = false
+    private var mouseDragCoalesceScheduled = false
 
-    private let session: () -> CaptureSessionState
+    private let session: () -> CaptureSessionState?
     private let toolbarFrame: () -> CGRect?
     private let onMakeOverlayKey: (CGPoint) -> Void
     private let onCursorUpdate: () -> Void
     private let onCursorReset: () -> Void
 
     init(
-        session: @escaping () -> CaptureSessionState,
+        session: @escaping () -> CaptureSessionState?,
         toolbarFrame: @escaping () -> CGRect?,
         onMakeOverlayKey: @escaping (CGPoint) -> Void,
         onCursorUpdate: @escaping () -> Void,
@@ -40,8 +42,7 @@ final class CaptureOverlayInteraction {
 
     func install() {
         keyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            guard let self else { return event }
-            let session = self.session()
+            guard let self, let session = self.session() else { return event }
             if event.keyCode == 53 { // Escape
                 session.onCancel?()
                 return nil
@@ -58,9 +59,7 @@ final class CaptureOverlayInteraction {
             return event
         }
         mouseMovedGlobal = NSEvent.addGlobalMonitorForEvents(matching: .mouseMoved) { [weak self] _ in
-            Task { @MainActor in
-                self?.handleMouseMoved()
-            }
+            self?.enqueueMouseMoved()
         }
 
         mouseDownLocal = NSEvent.addLocalMonitorForEvents(matching: .leftMouseDown) { [weak self] event in
@@ -79,9 +78,7 @@ final class CaptureOverlayInteraction {
             return event
         }
         mouseDraggedGlobal = NSEvent.addGlobalMonitorForEvents(matching: .leftMouseDragged) { [weak self] _ in
-            Task { @MainActor in
-                self?.handleSelectionMouseDragged()
-            }
+            self?.enqueueMouseDragged()
         }
         mouseUpGlobal = NSEvent.addGlobalMonitorForEvents(matching: .leftMouseUp) { [weak self] _ in
             Task { @MainActor in
@@ -95,6 +92,8 @@ final class CaptureOverlayInteraction {
         hoverTask = nil
         cachedWindows = []
         windowsCacheTime = .distantPast
+        mouseMoveCoalesceScheduled = false
+        mouseDragCoalesceScheduled = false
 
         let monitors: [Any?] = [
             keyMonitor, mouseMovedLocal, mouseMovedGlobal,
@@ -127,10 +126,30 @@ final class CaptureOverlayInteraction {
         }
     }
 
+    private func enqueueMouseMoved() {
+        guard !mouseMoveCoalesceScheduled else { return }
+        mouseMoveCoalesceScheduled = true
+        Task { @MainActor in
+            self.mouseMoveCoalesceScheduled = false
+            self.handleMouseMoved()
+        }
+    }
+
+    private func enqueueMouseDragged() {
+        guard !mouseDragCoalesceScheduled else { return }
+        mouseDragCoalesceScheduled = true
+        Task { @MainActor in
+            self.mouseDragCoalesceScheduled = false
+            self.handleSelectionMouseDragged()
+        }
+    }
+
     private func handleMouseMoved() {
+        guard let session = session() else { return }
         let location = NSEvent.mouseLocation
-        let session = session()
-        if !session.isSelectionInteracting {
+        let overToolbar = toolbarFrame()?.contains(location) == true
+
+        if !session.isSelectionInteracting, !overToolbar {
             onMakeOverlayKey(location)
         }
 
@@ -139,7 +158,7 @@ final class CaptureOverlayInteraction {
             scheduleHoverUpdate(at: location)
             onCursorUpdate()
         case .display:
-            session.selectedDisplayID = CaptureSessionState.displayID(at: location)
+            session.pointer.selectedDisplayID = CaptureSessionState.displayID(at: location)
             onCursorUpdate()
         case .selection:
             onCursorReset()
@@ -153,14 +172,16 @@ final class CaptureOverlayInteraction {
             return false
         }
 
-        let session = session()
+        guard let session = session() else { return false }
         switch session.mode {
         case .selection:
             session.beginSelectionInteraction(at: location)
             return false
         case .window:
-            let windowID = session.hoveredWindowID ?? session.selectedWindowID
-            guard windowID != nil else { return true }
+            guard resolveWindowTarget(at: location, session: session) else {
+                // Block click-through even when no window is under the cursor.
+                return true
+            }
             session.onRequestCapture?()
             return true
         case .display:
@@ -169,14 +190,34 @@ final class CaptureOverlayInteraction {
         }
     }
 
+    /// Ensures pointer state has a window target, using a sync cache hit-test when hover is stale.
+    @discardableResult
+    private func resolveWindowTarget(at location: NSPoint, session: CaptureSessionState) -> Bool {
+        if session.pointer.hoveredWindowID != nil || session.pointer.selectedWindowID != nil {
+            return true
+        }
+        guard !cachedWindows.isEmpty,
+              let hit = ScreenshotCaptureService.windowAt(point: location, in: cachedWindows) else {
+            return false
+        }
+        applyWindowHit(hit, to: session)
+        return true
+    }
+
+    private func applyWindowHit(_ hit: SCWindow, to session: CaptureSessionState) {
+        session.pointer.hoveredWindowID = hit.windowID
+        session.pointer.selectedWindowID = hit.windowID
+        session.pointer.hoveredWindowFrame = ScreenshotCaptureService.convertSCWindowFrameToAppKit(hit.frame)
+    }
+
     private func handleSelectionMouseDragged() {
-        let session = session()
+        guard let session = session() else { return }
         guard session.mode == .selection, session.isSelectionInteracting else { return }
         session.updateSelectionInteraction(at: NSEvent.mouseLocation)
     }
 
     private func handleSelectionMouseUp() {
-        let session = session()
+        guard let session = session() else { return }
         guard session.mode == .selection, session.isSelectionInteracting else { return }
         session.endSelectionInteraction(persist: true)
     }
@@ -188,15 +229,14 @@ final class CaptureOverlayInteraction {
 
             let location = NSEvent.mouseLocation
             let hit = ScreenshotCaptureService.windowAt(point: location, in: windows)
-            guard generation == hoverGeneration else { return }
+            guard generation == hoverGeneration, let session = session() else { return }
 
-            let session = session()
-            session.hoveredWindowID = hit?.windowID
-            session.selectedWindowID = hit?.windowID
             if let hit {
-                session.hoveredWindowFrame = ScreenshotCaptureService.convertSCWindowFrameToAppKit(hit.frame)
+                applyWindowHit(hit, to: session)
             } else {
-                session.hoveredWindowFrame = .zero
+                session.pointer.hoveredWindowID = nil
+                session.pointer.selectedWindowID = nil
+                session.pointer.hoveredWindowFrame = .zero
             }
             onCursorUpdate()
         } catch {
