@@ -8,10 +8,10 @@
 			<key>CFBundleTypeRole</key>
 			<string>Editor</string>
 			<key>CFBundleURLName</key>
-			<string>emilshr.scratio</string>
+			<string>emilshr.captzo</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>scratio</string>
+				<string>captzo</string>
 			</array>
 		</dict>
 	</array>

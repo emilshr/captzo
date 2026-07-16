@@ -16,6 +16,7 @@ enum AppPreferences {
     static let selectionRectKey = "selectionRect"
     static let toolbarOriginKey = "toolbarOrigin"
     static let clipboardToastMessageKey = "clipboardToastMessage"
+    static let aspectRatioBadgeColorsKey = "aspectRatioBadgeColors"
 
     /// Default: ⌘⇧6
     static let defaultHotkeyKeyCode: UInt32 = UInt32(kVK_ANSI_6)
@@ -140,6 +141,28 @@ enum AppPreferences {
                 forKey: toolbarOriginKey
             )
         }
+    }
+
+    static func badgeColorHex(for option: AspectRatioOption) -> String? {
+        badgeColorOverrides()[option.rawValue]
+    }
+
+    static func setBadgeColorHex(_ hex: String?, for option: AspectRatioOption) {
+        var overrides = badgeColorOverrides()
+        if let hex, !hex.isEmpty {
+            overrides[option.rawValue] = hex.uppercased()
+        } else {
+            overrides.removeValue(forKey: option.rawValue)
+        }
+        defaults.set(overrides, forKey: aspectRatioBadgeColorsKey)
+    }
+
+    static func resetBadgeColors() {
+        defaults.removeObject(forKey: aspectRatioBadgeColorsKey)
+    }
+
+    private static func badgeColorOverrides() -> [String: String] {
+        defaults.dictionary(forKey: aspectRatioBadgeColorsKey) as? [String: String] ?? [:]
     }
 
     private static func cgFloat(_ value: Any?) -> CGFloat? {

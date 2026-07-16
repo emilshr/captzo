@@ -1,7 +1,7 @@
 import CoreGraphics
 import Foundation
 import Testing
-@testable import scratio
+@testable import Captzo
 
 struct AspectRatioTests {
     @Test func aspectRatioOneToOneIsLocked() {
@@ -149,7 +149,7 @@ struct VirtualDesktopClampTests {
 @Suite(.serialized)
 struct AppPreferencesTests {
     @Test func captureModeRoundTrip() throws {
-        let suiteName = "scratio.tests.prefs.\(UUID().uuidString)"
+        let suiteName = "captzo.tests.prefs.\(UUID().uuidString)"
         let suite = try #require(UserDefaults(suiteName: suiteName))
         defer {
             suite.removePersistentDomain(forName: suiteName)
@@ -164,7 +164,7 @@ struct AppPreferencesTests {
     }
 
     @Test func selectionRectRoundTrip() throws {
-        let suiteName = "scratio.tests.prefs.\(UUID().uuidString)"
+        let suiteName = "captzo.tests.prefs.\(UUID().uuidString)"
         let suite = try #require(UserDefaults(suiteName: suiteName))
         defer {
             suite.removePersistentDomain(forName: suiteName)
@@ -185,7 +185,7 @@ struct AppPreferencesTests {
     }
 
     @Test func toolbarOriginRoundTrip() throws {
-        let suiteName = "scratio.tests.prefs.\(UUID().uuidString)"
+        let suiteName = "captzo.tests.prefs.\(UUID().uuidString)"
         let suite = try #require(UserDefaults(suiteName: suiteName))
         defer {
             suite.removePersistentDomain(forName: suiteName)

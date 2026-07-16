@@ -30,8 +30,16 @@ final class AppState {
         didSet { AppPreferences.clipboardToastMessage = clipboardToastMessage }
     }
 
+    /// `nil` means show all aspect ratios.
+    var aspectRatioFilter: AspectRatioOption?
+
+    /// Bumped when badge colors change so SwiftUI refreshes chips.
+    var badgeColorRevision: Int = 0
+
     var isCapturing = false
-    var selectedScreenshot: CapturedScreenshot?
+    var selectedScreenshotIDs: Set<UUID> = []
+    /// Last item the user interacted with (for preview / primary actions).
+    var lastSelectedScreenshotID: UUID?
     var statusMessage: String?
     var showPermissionAlert = false
     var permissionAlertMessage = ""
@@ -39,6 +47,7 @@ final class AppState {
     var needsScreenRecordingPermission = false
     /// Bumped to request the Gallery window from a SwiftUI scene that owns `openWindow`.
     var galleryOpenToken: Int = 0
+    var showDeleteConfirmation = false
 
     let captureCoordinator = CaptureCoordinator()
     private let toastController = ToastWindowController()
@@ -48,22 +57,106 @@ final class AppState {
         refreshScreenRecordingPermission()
     }
 
+    var filteredScreenshots: [CapturedScreenshot] {
+        guard let aspectRatioFilter else { return screenshots }
+        return screenshots.filter { $0.aspectRatioRaw == aspectRatioFilter.rawValue }
+    }
+
+    var selectedScreenshots: [CapturedScreenshot] {
+        let ids = selectedScreenshotIDs
+        return filteredScreenshots.filter { ids.contains($0.id) }
+    }
+
+    var primarySelectedScreenshot: CapturedScreenshot? {
+        if let lastSelectedScreenshotID,
+           let match = screenshots.first(where: { $0.id == lastSelectedScreenshotID }),
+           selectedScreenshotIDs.contains(match.id) {
+            return match
+        }
+        return selectedScreenshots.first
+    }
+
     func reloadScreenshots() async {
         screenshots = await ScreenshotStore.shared.listScreenshots(sortOrder: sortOrder)
+        let validIDs = Set(screenshots.map(\.id))
+        selectedScreenshotIDs = selectedScreenshotIDs.intersection(validIDs)
+        if let lastSelectedScreenshotID, !validIDs.contains(lastSelectedScreenshotID) {
+            self.lastSelectedScreenshotID = selectedScreenshotIDs.first
+        }
     }
 
     var screenshotsFolderPath: String {
         ScreenshotStore.shared.screenshotsDirectory.path
     }
 
+    func selectOnly(_ screenshot: CapturedScreenshot) {
+        selectedScreenshotIDs = [screenshot.id]
+        lastSelectedScreenshotID = screenshot.id
+    }
+
+    func toggleSelection(_ screenshot: CapturedScreenshot) {
+        if selectedScreenshotIDs.contains(screenshot.id) {
+            selectedScreenshotIDs.remove(screenshot.id)
+            if lastSelectedScreenshotID == screenshot.id {
+                lastSelectedScreenshotID = selectedScreenshotIDs.first
+            }
+        } else {
+            selectedScreenshotIDs.insert(screenshot.id)
+            lastSelectedScreenshotID = screenshot.id
+        }
+    }
+
+    func selectRange(to screenshot: CapturedScreenshot) {
+        let items = filteredScreenshots
+        guard let endIndex = items.firstIndex(where: { $0.id == screenshot.id }) else {
+            selectOnly(screenshot)
+            return
+        }
+        let startID = lastSelectedScreenshotID ?? selectedScreenshotIDs.first
+        guard let startID,
+              let startIndex = items.firstIndex(where: { $0.id == startID }) else {
+            selectOnly(screenshot)
+            return
+        }
+        let range = startIndex <= endIndex
+            ? startIndex...endIndex
+            : endIndex...startIndex
+        selectedScreenshotIDs = Set(items[range].map(\.id))
+        lastSelectedScreenshotID = screenshot.id
+    }
+
+    func handleGridClick(_ screenshot: CapturedScreenshot, flags: NSEvent.ModifierFlags) {
+        if flags.contains(.command) {
+            toggleSelection(screenshot)
+        } else if flags.contains(.shift) {
+            selectRange(to: screenshot)
+        } else {
+            selectOnly(screenshot)
+        }
+    }
+
     func revealInFinder(_ screenshot: CapturedScreenshot) {
         ScreenshotStore.shared.revealInFinder(screenshot)
+    }
+
+    func revealInFinder(_ screenshots: [CapturedScreenshot]) {
+        let urls = screenshots.map(\.fileURL)
+        guard !urls.isEmpty else { return }
+        NSWorkspace.shared.activateFileViewerSelecting(urls)
+    }
+
+    func revealSelectedInFinder() {
+        revealInFinder(selectedScreenshots)
     }
 
     func revealScreenshotsFolderInFinder() {
         NSWorkspace.shared.activateFileViewerSelecting([
             ScreenshotStore.shared.screenshotsDirectory
         ])
+    }
+
+    func openInDefaultApp(_ screenshot: CapturedScreenshot) {
+        NSWorkspace.shared.open(screenshot.fileURL)
     }
 
     func refreshScreenRecordingPermission() {
@@ -126,15 +219,27 @@ final class AppState {
     }
 
     func delete(_ screenshot: CapturedScreenshot) {
-        do {
-            try ScreenshotStore.shared.delete(screenshot)
-            if selectedScreenshot?.id == screenshot.id {
-                selectedScreenshot = nil
+        delete(ids: [screenshot.id])
+    }
+
+    func deleteSelected() {
+        delete(ids: selectedScreenshotIDs)
+    }
+
+    func delete(ids: Set<UUID>) {
+        let toDelete = screenshots.filter { ids.contains($0.id) }
+        for shot in toDelete {
+            do {
+                try ScreenshotStore.shared.delete(shot)
+            } catch {
+                statusMessage = error.localizedDescription
             }
-            Task { await reloadScreenshots() }
-        } catch {
-            statusMessage = error.localizedDescription
         }
+        selectedScreenshotIDs.subtract(ids)
+        if let lastSelectedScreenshotID, ids.contains(lastSelectedScreenshotID) {
+            self.lastSelectedScreenshotID = selectedScreenshotIDs.first
+        }
+        Task { await reloadScreenshots() }
     }
 
     func copyToClipboard(_ screenshot: CapturedScreenshot) {
@@ -144,6 +249,15 @@ final class AppState {
         } else {
             statusMessage = "Failed to copy screenshot"
         }
+    }
+
+    func copySelectedToClipboard() {
+        guard let primary = primarySelectedScreenshot else { return }
+        copyToClipboard(primary)
+    }
+
+    func notifyBadgeColorsChanged() {
+        badgeColorRevision &+= 1
     }
 
     func openGallery() {
@@ -161,7 +275,7 @@ final class AppState {
             return
         }
         NotificationCenter.default.post(name: .openGalleryWindow, object: nil)
-        if let url = URL(string: "scratio://gallery") {
+        if let url = URL(string: "captzo://gallery") {
             NSWorkspace.shared.open(url)
         }
     }
@@ -186,7 +300,7 @@ final class AppState {
             } else {
                 statusMessage = "Failed to copy screenshot"
             }
-            selectedScreenshot = item
+            selectOnly(item)
 
             if AppPreferences.openGalleryAfterCapture {
                 openGallery()
@@ -206,6 +320,6 @@ final class AppState {
 }
 
 extension Notification.Name {
-    static let openGalleryWindow = Notification.Name("scratio.openGalleryWindow")
-    static let openSettingsWindow = Notification.Name("scratio.openSettingsWindow")
+    static let openGalleryWindow = Notification.Name("captzo.openGalleryWindow")
+    static let openSettingsWindow = Notification.Name("captzo.openSettingsWindow")
 }

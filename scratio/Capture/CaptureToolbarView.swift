@@ -19,28 +19,14 @@ struct CaptureToolbarView: View {
                 Divider()
                     .frame(height: 28)
 
-                Menu {
-                    ForEach(AspectRatioOption.allCases) { option in
-                        Button {
-                            session.setAspectRatio(option)
-                        } label: {
-                            HStack {
-                                Text(option.displayName)
-                                if session.aspectRatio == option {
-                                    Image(systemName: "checkmark")
-                                }
-                            }
-                        }
-                    }
-                } label: {
-                    Label(session.aspectRatio.displayName, systemImage: "aspectratio")
-                        .labelStyle(.titleAndIcon)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 8)
-                        .background(Color.white.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
-                }
-                .menuStyle(.borderlessButton)
-                .disabled(session.mode != .selection)
+                AspectRatioMenu(
+                    selection: Binding(
+                        get: { session.aspectRatio },
+                        set: { session.setAspectRatio($0) }
+                    ),
+                    labelStyle: .compact,
+                    isDisabled: session.mode != .selection
+                )
                 .help("Aspect ratio (selection mode)")
                 .appKitTooltip("Aspect ratio (selection mode)")
 

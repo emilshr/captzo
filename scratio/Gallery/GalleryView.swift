@@ -13,14 +13,9 @@ struct GalleryView: View {
         @Bindable var appState = appState
 
         NavigationSplitView {
-            List(selection: Binding(
-                get: { appState.selectedScreenshot?.id },
-                set: { id in
-                    appState.selectedScreenshot = appState.screenshots.first { $0.id == id }
-                }
-            )) {
+            List(selection: $appState.selectedScreenshotIDs) {
                 Section("Library") {
-                    ForEach(appState.screenshots) { shot in
+                    ForEach(appState.filteredScreenshots) { shot in
                         Text(shot.createdAt.scratioSidebarLabel())
                             .tag(shot.id)
                     }
@@ -40,6 +35,12 @@ struct GalleryView: View {
                 }
                 .padding()
             }
+            .onChange(of: appState.selectedScreenshotIDs) { _, newValue in
+                if let last = appState.lastSelectedScreenshotID, newValue.contains(last) {
+                    return
+                }
+                appState.lastSelectedScreenshotID = newValue.first
+            }
         } detail: {
             VStack(spacing: 0) {
                 if appState.needsScreenRecordingPermission {
@@ -47,14 +48,14 @@ struct GalleryView: View {
                 }
                 toolbar
                 Divider()
-                if appState.screenshots.isEmpty {
+                if appState.filteredScreenshots.isEmpty {
                     emptyState
                 } else {
                     grid
                 }
             }
         }
-        .navigationTitle("Scratio")
+        .navigationTitle("Captzo")
         .alert("Screen Recording Required", isPresented: $appState.showPermissionAlert) {
             Button("Open System Settings") {
                 ScreenshotCaptureService.openScreenRecordingSettings()
@@ -62,6 +63,17 @@ struct GalleryView: View {
             Button("Cancel", role: .cancel) {}
         } message: {
             Text(appState.permissionAlertMessage)
+        }
+        .alert(
+            "Delete \(appState.selectedScreenshotIDs.count) Screenshots?",
+            isPresented: $appState.showDeleteConfirmation
+        ) {
+            Button("Delete", role: .destructive) {
+                appState.deleteSelected()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This cannot be undone.")
         }
         .task {
             await appState.reloadScreenshots()
@@ -87,8 +99,8 @@ struct GalleryView: View {
                     .font(.headline)
                 Text(
                     "Without this permission the capture overlay cannot work. "
-                        + "Enable Scratio in System Settings → Privacy & Security → Screen Recording, "
-                        + "then quit and relaunch Scratio."
+                        + "Enable Captzo in System Settings → Privacy & Security → Screen Recording, "
+                        + "then quit and relaunch Captzo."
                 )
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
@@ -121,7 +133,7 @@ struct GalleryView: View {
     private var toolbar: some View {
         @Bindable var appState = appState
 
-        return HStack {
+        return HStack(spacing: 12) {
             Picker("Sort", selection: $appState.sortOrder) {
                 ForEach(GallerySortOrder.allCases) { order in
                     Text(order.title).tag(order)
@@ -130,23 +142,29 @@ struct GalleryView: View {
             .pickerStyle(.segmented)
             .frame(maxWidth: 280)
 
+            AspectRatioFilterMenu(filter: $appState.aspectRatioFilter)
+
             Spacer()
 
-            if let selected = appState.selectedScreenshot {
+            if !appState.selectedScreenshotIDs.isEmpty {
                 Button {
-                    appState.copyToClipboard(selected)
+                    appState.copySelectedToClipboard()
                 } label: {
                     Label("Copy", systemImage: "doc.on.clipboard")
                 }
 
                 Button {
-                    appState.revealInFinder(selected)
+                    appState.revealSelectedInFinder()
                 } label: {
                     Label("Reveal", systemImage: "folder")
                 }
 
                 Button(role: .destructive) {
-                    appState.delete(selected)
+                    if appState.selectedScreenshotIDs.count > 1 {
+                        appState.showDeleteConfirmation = true
+                    } else {
+                        appState.deleteSelected()
+                    }
                 } label: {
                     Label("Delete", systemImage: "trash")
                 }
@@ -166,46 +184,100 @@ struct GalleryView: View {
     private var grid: some View {
         ScrollView {
             LazyVGrid(columns: columns, spacing: 16) {
-                ForEach(appState.screenshots) { shot in
+                ForEach(appState.filteredScreenshots) { shot in
                     ScreenshotThumbnail(
                         screenshot: shot,
-                        isSelected: appState.selectedScreenshot?.id == shot.id
+                        isSelected: appState.selectedScreenshotIDs.contains(shot.id),
+                        badgeColorRevision: appState.badgeColorRevision
                     )
-                    .onTapGesture {
-                        appState.selectedScreenshot = shot
+                    .onTapGesture(count: 2) {
+                        appState.openInDefaultApp(shot)
+                    }
+                    .onTapGesture(count: 1) {
+                        appState.handleGridClick(shot, flags: NSEvent.modifierFlags)
                     }
                     .contextMenu {
-                        Button("Copy to Clipboard") {
-                            appState.copyToClipboard(shot)
-                        }
-                        Button("Reveal in Finder") {
-                            appState.revealInFinder(shot)
-                        }
-                        Divider()
-                        Button("Delete", role: .destructive) {
-                            appState.delete(shot)
-                        }
+                        contextMenu(for: shot)
                     }
                 }
             }
             .padding(20)
 
-            if let selected = appState.selectedScreenshot {
-                ScreenshotPreviewPanel(screenshot: selected)
+            if let selected = appState.primarySelectedScreenshot {
+                ScreenshotPreviewPanel(
+                    screenshot: selected,
+                    badgeColorRevision: appState.badgeColorRevision
+                )
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func contextMenu(for shot: CapturedScreenshot) -> some View {
+        let targets: [CapturedScreenshot] = {
+            if appState.selectedScreenshotIDs.contains(shot.id),
+               appState.selectedScreenshotIDs.count > 1 {
+                return appState.selectedScreenshots
+            }
+            return [shot]
+        }()
+
+        Button("Open") {
+            if targets.count == 1, let only = targets.first {
+                appState.openInDefaultApp(only)
+            } else {
+                for item in targets {
+                    appState.openInDefaultApp(item)
+                }
+            }
+        }
+
+        Button("Copy to Clipboard") {
+            if let primary = targets.last {
+                appState.copyToClipboard(primary)
+            }
+        }
+
+        Button("Reveal in Finder") {
+            appState.revealInFinder(targets)
+        }
+
+        Divider()
+
+        Button("Delete", role: .destructive) {
+            let ids = Set(targets.map(\.id))
+            if ids.count > 1 {
+                appState.selectedScreenshotIDs = ids
+                appState.showDeleteConfirmation = true
+            } else {
+                appState.delete(ids: ids)
             }
         }
     }
 
     private var emptyState: some View {
         ContentUnavailableView {
-            Label("No Screenshots Yet", systemImage: "camera.viewfinder")
+            Label(
+                appState.screenshots.isEmpty ? "No Screenshots Yet" : "No Matching Screenshots",
+                systemImage: "camera.viewfinder"
+            )
         } description: {
-            Text("Capture with a preset aspect ratio from the menu bar, or start one here.")
-        } actions: {
-            Button("New Capture") {
-                appState.startCapture()
+            if appState.screenshots.isEmpty {
+                Text("Capture with a preset aspect ratio from the menu bar, or start one here.")
+            } else {
+                Text("Try a different aspect ratio filter.")
             }
-            .buttonStyle(.borderedProminent)
+        } actions: {
+            if appState.screenshots.isEmpty {
+                Button("New Capture") {
+                    appState.startCapture()
+                }
+                .buttonStyle(.borderedProminent)
+            } else {
+                Button("Clear Filter") {
+                    appState.aspectRatioFilter = nil
+                }
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
@@ -213,6 +285,7 @@ struct GalleryView: View {
 
 private struct ScreenshotPreviewPanel: View {
     let screenshot: CapturedScreenshot
+    var badgeColorRevision: Int
 
     @State private var previewImage: NSImage?
 
@@ -228,9 +301,16 @@ private struct ScreenshotPreviewPanel: View {
                         .frame(maxHeight: 360)
                         .clipShape(RoundedRectangle(cornerRadius: 10))
                         .shadow(radius: 4)
-                    Text("\(Int(previewImage.size.width)) × \(Int(previewImage.size.height)) · \(screenshot.aspectRatioLabel)")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    HStack(spacing: 8) {
+                        Text("\(Int(previewImage.size.width)) × \(Int(previewImage.size.height))")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        AspectRatioBadge(
+                            label: screenshot.aspectRatioLabel,
+                            option: screenshot.aspectRatioOption
+                        )
+                        .id(badgeColorRevision)
+                    }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 20)

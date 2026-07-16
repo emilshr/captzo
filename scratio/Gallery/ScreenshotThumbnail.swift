@@ -4,6 +4,7 @@ import SwiftUI
 struct ScreenshotThumbnail: View {
     let screenshot: CapturedScreenshot
     let isSelected: Bool
+    var badgeColorRevision: Int = 0
 
     @State private var image: NSImage?
 
@@ -36,9 +37,11 @@ struct ScreenshotThumbnail: View {
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
 
-            Text(screenshot.aspectRatioLabel)
-                .font(.caption2)
-                .foregroundStyle(.tertiary)
+            AspectRatioBadge(
+                label: screenshot.aspectRatioLabel,
+                option: screenshot.aspectRatioOption
+            )
+            .id(badgeColorRevision)
         }
         .contentShape(Rectangle())
         .task(id: screenshot.id) {
