@@ -2,7 +2,7 @@ import AppKit
 import SwiftUI
 
 struct GalleryView: View {
-    @Bindable var appState: AppState
+    @Environment(AppState.self) private var appState
     @Environment(\.openSettings) private var openSettings
 
     private let columns = [
@@ -10,6 +10,8 @@ struct GalleryView: View {
     ]
 
     var body: some View {
+        @Bindable var appState = appState
+
         NavigationSplitView {
             List(selection: Binding(
                 get: { appState.selectedScreenshot?.id },
@@ -61,8 +63,8 @@ struct GalleryView: View {
         } message: {
             Text(appState.permissionAlertMessage)
         }
-        .onAppear {
-            appState.reloadScreenshots()
+        .task {
+            await appState.reloadScreenshots()
             appState.refreshScreenRecordingPermission()
             NSApp.setActivationPolicy(.regular)
         }
@@ -83,7 +85,11 @@ struct GalleryView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Screen Recording permission required")
                     .font(.headline)
-                Text("Without this permission the capture overlay cannot work. Enable Scratio in System Settings → Privacy & Security → Screen Recording, then quit and relaunch Scratio.")
+                Text(
+                    "Without this permission the capture overlay cannot work. "
+                        + "Enable Scratio in System Settings → Privacy & Security → Screen Recording, "
+                        + "then quit and relaunch Scratio."
+                )
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -113,7 +119,9 @@ struct GalleryView: View {
     }
 
     private var toolbar: some View {
-        HStack {
+        @Bindable var appState = appState
+
+        return HStack {
             Picker("Sort", selection: $appState.sortOrder) {
                 ForEach(GallerySortOrder.allCases) { order in
                     Text(order.title).tag(order)
@@ -132,7 +140,7 @@ struct GalleryView: View {
                 }
 
                 Button {
-                    ScreenshotStore.shared.revealInFinder(selected)
+                    appState.revealInFinder(selected)
                 } label: {
                     Label("Reveal", systemImage: "folder")
                 }
@@ -171,7 +179,7 @@ struct GalleryView: View {
                             appState.copyToClipboard(shot)
                         }
                         Button("Reveal in Finder") {
-                            ScreenshotStore.shared.revealInFinder(shot)
+                            appState.revealInFinder(shot)
                         }
                         Divider()
                         Button("Delete", role: .destructive) {
@@ -182,24 +190,8 @@ struct GalleryView: View {
             }
             .padding(20)
 
-            if let selected = appState.selectedScreenshot,
-               let image = ScreenshotStore.shared.loadImage(for: selected) {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Preview")
-                        .font(.headline)
-                    Image(nsImage: image)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(maxHeight: 360)
-                        .clipShape(RoundedRectangle(cornerRadius: 10))
-                        .shadow(radius: 4)
-                    Text("\(Int(image.size.width)) × \(Int(image.size.height)) · \(selected.aspectRatioLabel)")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 20)
-                .padding(.bottom, 24)
+            if let selected = appState.selectedScreenshot {
+                ScreenshotPreviewPanel(screenshot: selected)
             }
         }
     }
@@ -216,5 +208,37 @@ struct GalleryView: View {
             .buttonStyle(.borderedProminent)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+private struct ScreenshotPreviewPanel: View {
+    let screenshot: CapturedScreenshot
+
+    @State private var previewImage: NSImage?
+
+    var body: some View {
+        Group {
+            if let previewImage {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Preview")
+                        .font(.headline)
+                    Image(nsImage: previewImage)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(maxHeight: 360)
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                        .shadow(radius: 4)
+                    Text("\(Int(previewImage.size.width)) × \(Int(previewImage.size.height)) · \(screenshot.aspectRatioLabel)")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 24)
+            }
+        }
+        .task(id: screenshot.id) {
+            previewImage = await ScreenshotStore.shared.loadImage(for: screenshot)
+        }
     }
 }

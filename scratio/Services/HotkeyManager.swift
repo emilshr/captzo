@@ -1,10 +1,13 @@
 import AppKit
 import Carbon
 import Foundation
+import OSLog
 
 /// Registers a Carbon global hotkey. Not MainActor-isolated so the C callback can call into it safely.
 final class HotkeyManager: @unchecked Sendable {
     static let shared = HotkeyManager()
+
+    private static let logger = Logger(subsystem: "emilshr.scratio", category: "HotkeyManager")
 
     private var hotKeyRef: EventHotKeyRef?
     private var eventHandler: EventHandlerRef?
@@ -73,7 +76,7 @@ final class HotkeyManager: @unchecked Sendable {
         if status == noErr {
             hotKeyRef = ref
         } else {
-            print("Hotkey registration failed with status \(status)")
+            Self.logger.error("Hotkey registration failed with status \(status)")
             hotKeyRef = nil
             DispatchQueue.main.async {
                 AppState.shared.statusMessage = "Hotkey unavailable (conflict or invalid shortcut)"

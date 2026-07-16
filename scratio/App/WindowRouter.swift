@@ -24,7 +24,7 @@ struct WindowRouterRegistrar: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .onAppear {
+            .task {
                 WindowRouter.shared.register(openWindow)
             }
     }

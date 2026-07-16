@@ -1,6 +1,67 @@
 import AppKit
 import Foundation
 
+private enum ScreenshotFileIO {
+    static func loadImage(at url: URL) -> NSImage? {
+        NSImage(contentsOf: url)
+    }
+
+    static func listScreenshots(
+        screenshotsDirectory: URL,
+        metadataDirectory: URL,
+        sortOrder: GallerySortOrder
+    ) -> [CapturedScreenshot] {
+        let fileManager = FileManager.default
+
+        try? fileManager.createDirectory(at: screenshotsDirectory, withIntermediateDirectories: true)
+        try? fileManager.createDirectory(at: metadataDirectory, withIntermediateDirectories: true)
+
+        guard let urls = try? fileManager.contentsOfDirectory(
+            at: screenshotsDirectory,
+            includingPropertiesForKeys: [.contentModificationDateKey, .creationDateKey],
+            options: [.skipsHiddenFiles]
+        ) else {
+            return []
+        }
+
+        let pngs = urls.filter { $0.pathExtension.lowercased() == "png" }
+        var items: [CapturedScreenshot] = []
+
+        for url in pngs {
+            let meta = loadMetadata(for: url, metadataDirectory: metadataDirectory)
+            let createdAt = meta?.createdAt
+                ?? (try? url.resourceValues(forKeys: [.creationDateKey]).creationDate)
+                ?? Date.distantPast
+            let id = meta?.id ?? UUID(uuidString: url.deletingPathExtension().lastPathComponent) ?? UUID()
+            items.append(
+                CapturedScreenshot(
+                    id: id,
+                    fileURL: url,
+                    createdAt: createdAt,
+                    aspectRatioRaw: meta?.aspectRatio
+                )
+            )
+        }
+
+        return switch sortOrder {
+        case .newestFirst:
+            items.sorted { $0.createdAt > $1.createdAt }
+        case .oldestFirst:
+            items.sorted { $0.createdAt < $1.createdAt }
+        }
+    }
+
+    private static func metadataURL(for imageURL: URL, metadataDirectory: URL) -> URL {
+        metadataDirectory.appendingPathComponent("\(imageURL.deletingPathExtension().lastPathComponent).json")
+    }
+
+    private static func loadMetadata(for imageURL: URL, metadataDirectory: URL) -> ScreenshotMetadata? {
+        let url = metadataURL(for: imageURL, metadataDirectory: metadataDirectory)
+        guard let data = try? Data(contentsOf: url) else { return nil }
+        return try? JSONDecoder().decode(ScreenshotMetadata.self, from: data)
+    }
+}
+
 @MainActor
 final class ScreenshotStore {
     static let shared = ScreenshotStore()
@@ -8,7 +69,9 @@ final class ScreenshotStore {
     private let fileManager = FileManager.default
 
     var screenshotsDirectory: URL {
-        let base = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        guard let base = fileManager.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
+            fatalError("Application Support directory is unavailable.")
+        }
         return base
             .appendingPathComponent("scratio", isDirectory: true)
             .appendingPathComponent("Screenshots", isDirectory: true)
@@ -27,42 +90,16 @@ final class ScreenshotStore {
         try fileManager.createDirectory(at: metadataDirectory, withIntermediateDirectories: true)
     }
 
-    func listScreenshots(sortOrder: GallerySortOrder) -> [CapturedScreenshot] {
-        try? ensureDirectories()
-
-        guard let urls = try? fileManager.contentsOfDirectory(
-            at: screenshotsDirectory,
-            includingPropertiesForKeys: [.contentModificationDateKey, .creationDateKey],
-            options: [.skipsHiddenFiles]
-        ) else {
-            return []
-        }
-
-        let pngs = urls.filter { $0.pathExtension.lowercased() == "png" }
-        var items: [CapturedScreenshot] = []
-
-        for url in pngs {
-            let meta = loadMetadata(for: url)
-            let createdAt = meta?.createdAt
-                ?? (try? url.resourceValues(forKeys: [.creationDateKey]).creationDate)
-                ?? Date.distantPast
-            let id = meta?.id ?? UUID(uuidString: url.deletingPathExtension().lastPathComponent) ?? UUID()
-            items.append(
-                CapturedScreenshot(
-                    id: id,
-                    fileURL: url,
-                    createdAt: createdAt,
-                    aspectRatioRaw: meta?.aspectRatio
-                )
+    func listScreenshots(sortOrder: GallerySortOrder) async -> [CapturedScreenshot] {
+        let screenshotsDirectory = screenshotsDirectory
+        let metadataDirectory = metadataDirectory
+        return await Task.detached(priority: .userInitiated) {
+            ScreenshotFileIO.listScreenshots(
+                screenshotsDirectory: screenshotsDirectory,
+                metadataDirectory: metadataDirectory,
+                sortOrder: sortOrder
             )
-        }
-
-        switch sortOrder {
-        case .newestFirst:
-            return items.sorted { $0.createdAt > $1.createdAt }
-        case .oldestFirst:
-            return items.sorted { $0.createdAt < $1.createdAt }
-        }
+        }.value
     }
 
     func save(
@@ -109,8 +146,11 @@ final class ScreenshotStore {
         }
     }
 
-    func loadImage(for screenshot: CapturedScreenshot) -> NSImage? {
-        NSImage(contentsOf: screenshot.fileURL)
+    func loadImage(for screenshot: CapturedScreenshot) async -> NSImage? {
+        let url = screenshot.fileURL
+        return await Task.detached(priority: .userInitiated) {
+            ScreenshotFileIO.loadImage(at: url)
+        }.value
     }
 
     func revealInFinder(_ screenshot: CapturedScreenshot) {

@@ -3,41 +3,30 @@ import Carbon
 import SwiftUI
 
 struct SettingsView: View {
-    @State private var aspectRatio = AppPreferences.aspectRatio
-    @State private var openGalleryAfterCapture = AppPreferences.openGalleryAfterCapture
+    @Environment(AppState.self) private var appState
     @State private var hotkeyDisplay = HotkeyManager.displayString(
         keyCode: AppPreferences.hotkeyKeyCode,
         modifiers: AppPreferences.hotkeyModifiers
     )
-    @State private var clipboardToastMessage = AppPreferences.clipboardToastMessage
     @State private var isRecordingHotkey = false
     @State private var monitor: Any?
-    @Bindable private var appState = AppState.shared
 
     var body: some View {
+        @Bindable var appState = appState
+
         Form {
             Section("Capture") {
-                Picker("Default Aspect Ratio", selection: $aspectRatio) {
+                Picker("Default Aspect Ratio", selection: $appState.aspectRatio) {
                     ForEach(AspectRatioOption.allCases) { option in
                         Text(option.displayName).tag(option)
                     }
                 }
-                .onChange(of: aspectRatio) { _, newValue in
-                    AppPreferences.aspectRatio = newValue
-                    AppState.shared.aspectRatio = newValue
-                }
 
-                Toggle("Open Gallery After Capture", isOn: $openGalleryAfterCapture)
-                    .onChange(of: openGalleryAfterCapture) { _, newValue in
-                        AppPreferences.openGalleryAfterCapture = newValue
-                    }
+                Toggle("Open Gallery After Capture", isOn: $appState.openGalleryAfterCapture)
             }
 
             Section("Feedback") {
-                TextField("Copied to clipboard", text: $clipboardToastMessage)
-                    .onChange(of: clipboardToastMessage) { _, newValue in
-                        AppPreferences.clipboardToastMessage = newValue
-                    }
+                TextField("Copied to clipboard", text: $appState.clipboardToastMessage)
                 Text("Shown after a screenshot is copied.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -101,16 +90,14 @@ struct SettingsView: View {
 
             Section("Storage") {
                 LabeledContent("Screenshots Folder") {
-                    Text(ScreenshotStore.shared.screenshotsDirectory.path)
+                    Text(appState.screenshotsFolderPath)
                         .font(.caption)
                         .textSelection(.enabled)
                         .lineLimit(2)
                 }
 
                 Button("Reveal in Finder") {
-                    NSWorkspace.shared.activateFileViewerSelecting([
-                        ScreenshotStore.shared.screenshotsDirectory
-                    ])
+                    appState.revealScreenshotsFolderInFinder()
                 }
             }
         }
@@ -125,8 +112,8 @@ struct SettingsView: View {
         } message: {
             Text(appState.permissionAlertMessage)
         }
-        .onAppear {
-            AppState.shared.refreshScreenRecordingPermission()
+        .task {
+            appState.refreshScreenRecordingPermission()
         }
         .onDisappear {
             stopRecording()
