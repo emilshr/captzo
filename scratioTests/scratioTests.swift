@@ -362,10 +362,11 @@ struct WindowHitTestingTests {
         #expect(hit == 2)
     }
 
-    @Test func pickableWindowTitleRequiresNonEmptyValue() {
+    @Test func pickableWindowTitleRequiresTitleOrAppName() {
         #expect(ScreenGeometry.isPickableWindowTitle("Finder"))
+        #expect(ScreenGeometry.isPickableWindowTitle(nil, appName: "Cursor"))
         #expect(!ScreenGeometry.isPickableWindowTitle(""))
-        #expect(!ScreenGeometry.isPickableWindowTitle("   "))
+        #expect(!ScreenGeometry.isPickableWindowTitle("   ", appName: ""))
         #expect(!ScreenGeometry.isPickableWindowTitle(nil))
     }
 

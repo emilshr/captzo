@@ -159,7 +159,7 @@ enum ScreenshotCaptureService {
         if app.processID == ownPID { return false }
         if window.frame.width < 40 || window.frame.height < 40 { return false }
         if !window.isOnScreen { return false }
-        if !ScreenGeometry.isPickableWindowTitle(window.title) { return false }
+        if !ScreenGeometry.isPickableWindowTitle(window.title, appName: app.applicationName) { return false }
         if !ScreenGeometry.isPickableWindowLayer(window.windowLayer) { return false }
         return true
     }

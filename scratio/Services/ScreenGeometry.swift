@@ -120,9 +120,12 @@ enum ScreenGeometry {
         return nil
     }
 
-    static func isPickableWindowTitle(_ title: String?) -> Bool {
-        guard let title else { return false }
-        return !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    static func isPickableWindowTitle(_ title: String?, appName: String? = nil) -> Bool {
+        if let title, !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return true
+        }
+        guard let appName else { return false }
+        return !appName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     static func isPickableWindowLayer(_ layer: Int) -> Bool {
