@@ -107,32 +107,6 @@
 		};
 /* End PBXGroup section */
 
-/* Begin PBXShellScriptBuildPhase section */
-		20BA4A623006581D00560FBA /* SwiftLint */ = {
-			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-				"$(SRCROOT)/.swiftlint.yml",
-				"$(SRCROOT)/.swiftlint.baseline",
-				"$(SRCROOT)/scratio",
-			);
-			name = SwiftLint;
-			outputFileListPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "export PATH=\"/opt/homebrew/bin:$PATH\"\nif [ -x \"${SRCROOT}/scripts/swiftlint.sh\" ]; then\n  \"${SRCROOT}/scripts/swiftlint.sh\"\nelif command -v swiftlint >/dev/null; then\n  echo \"warning: scripts/swiftlint.sh missing; falling back to swiftlint without portable baseline.\"\n  cd \"${SRCROOT}\"\n  swiftlint lint --strict scratio\nelse\n  echo \"warning: SwiftLint not installed; run brew install swiftlint.\"\nfi\n";
-			showEnvVarsInLog = 0;
-		};
-/* End PBXShellScriptBuildPhase section */
-
 /* Begin PBXNativeTarget section */
 		20BA4A2A3006581C00560FBA /* scratio */ = {
 			isa = PBXNativeTarget;
@@ -268,6 +242,32 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		20BA4A623006581D00560FBA /* SwiftLint */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/.swiftlint.yml",
+				"$(SRCROOT)/.swiftlint.baseline",
+				"$(SRCROOT)/scratio",
+			);
+			name = SwiftLint;
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "export PATH=\"/opt/homebrew/bin:$PATH\"\nif [ -x \"${SRCROOT}/scripts/swiftlint.sh\" ]; then\n  \"${SRCROOT}/scripts/swiftlint.sh\"\nelif command -v swiftlint >/dev/null; then\n  echo \"warning: scripts/swiftlint.sh missing; falling back to swiftlint without portable baseline.\"\n  cd \"${SRCROOT}\"\n  swiftlint lint --strict scratio\nelse\n  echo \"warning: SwiftLint not installed; run brew install swiftlint.\"\nfi\n";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		20BA4A273006581C00560FBA /* Sources */ = {
@@ -439,9 +439,9 @@
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = scratio/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Captzo;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				INFOPLIST_KEY_CFBundleDisplayName = Captzo;
 				INFOPLIST_KEY_NSScreenCaptureUsageDescription = "Captzo needs Screen Recording access to capture screenshots with aspect-ratio selection.";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -474,9 +474,9 @@
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = scratio/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Captzo;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				INFOPLIST_KEY_CFBundleDisplayName = Captzo;
 				INFOPLIST_KEY_NSScreenCaptureUsageDescription = "Captzo needs Screen Recording access to capture screenshots with aspect-ratio selection.";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
