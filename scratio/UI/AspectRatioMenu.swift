@@ -43,11 +43,14 @@ struct AspectRatioMenu: View {
     private var labelContent: some View {
         switch labelStyle {
         case .compact:
-            HStack(spacing: 6) {
+            HStack(spacing: 8) {
                 if allSelected {
                     Image(systemName: "line.3.horizontal.decrease.circle")
                         .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.9))
                     Text("All")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.9))
                 } else {
                     Image(nsImage: AspectRatioGlyph.nsImage(
                         option: selection,
@@ -55,12 +58,23 @@ struct AspectRatioMenu: View {
                         color: .white.withAlphaComponent(0.9)
                     ))
                     Text(selection.displayName)
+                        .font(.system(size: 12, weight: .medium))
                         .foregroundStyle(.white.opacity(0.9))
                 }
+                Spacer(minLength: 8)
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.45))
             }
             .padding(.horizontal, 10)
-            .padding(.vertical, 8)
-            .background(Color.white.opacity(0.12), in: RoundedRectangle(cornerRadius: 8))
+            .frame(minWidth: 88)
+            .frame(height: 36)
+            .background(Color.black.opacity(0.28), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .strokeBorder(Color.white.opacity(0.2), lineWidth: 1)
+            )
+            .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         case .settings:
             HStack(spacing: 8) {
                 if allSelected {

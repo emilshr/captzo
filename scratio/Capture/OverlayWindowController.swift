@@ -9,7 +9,7 @@ final class KeyablePanel: NSPanel {
 
 @MainActor
 final class OverlayWindowController: NSObject, NSWindowDelegate {
-    static let toolbarSize = NSSize(width: 680, height: 72)
+    static let toolbarSize = NSSize(width: 720, height: 72)
 
     private var overlayWindows: [NSWindow] = []
     private var toolbarWindow: NSWindow?
