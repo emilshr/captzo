@@ -1,5 +1,6 @@
 # Xcode
 DerivedData/
+.derivedData/
 build/
 *.xcuserstate
 xcuserdata/
@@ -8,6 +9,11 @@ xcuserdata/
 *.ipa
 *.dSYM.zip
 *.dSYM
+.derivedData/
+.build/
+.swiftpm/
+.env
+.env.*
 
 # macOS
 .DS_Store
@@ -20,5 +26,5 @@ xcuserdata/
 .env
 .env.*
 
-# Local docs (not tracked)
-Docs/
+# Local beginner guide (not tracked)
+docs/

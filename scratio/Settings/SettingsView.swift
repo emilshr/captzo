@@ -9,8 +9,10 @@ struct SettingsView: View {
         keyCode: AppPreferences.hotkeyKeyCode,
         modifiers: AppPreferences.hotkeyModifiers
     )
+    @State private var clipboardToastMessage = AppPreferences.clipboardToastMessage
     @State private var isRecordingHotkey = false
     @State private var monitor: Any?
+    @Bindable private var appState = AppState.shared
 
     var body: some View {
         Form {
@@ -29,6 +31,16 @@ struct SettingsView: View {
                     .onChange(of: openGalleryAfterCapture) { _, newValue in
                         AppPreferences.openGalleryAfterCapture = newValue
                     }
+            }
+
+            Section("Feedback") {
+                TextField("Copied to clipboard", text: $clipboardToastMessage)
+                    .onChange(of: clipboardToastMessage) { _, newValue in
+                        AppPreferences.clipboardToastMessage = newValue
+                    }
+                Text("Shown after a screenshot is copied.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
 
             Section("Global Hotkey") {
@@ -58,6 +70,10 @@ struct SettingsView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
 
+                Text(ScreenshotCaptureService.screenRecordingRestartHint)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+
                 Button("Reset to Default") {
                     AppPreferences.hotkeyKeyCode = AppPreferences.defaultHotkeyKeyCode
                     AppPreferences.hotkeyModifiers = AppPreferences.defaultHotkeyModifiers
@@ -79,7 +95,7 @@ struct SettingsView: View {
                 }
 
                 Button("Request Permission") {
-                    _ = ScreenshotCaptureService.requestScreenCaptureAccess()
+                    appState.requestScreenRecordingPermission()
                 }
             }
 
@@ -100,7 +116,18 @@ struct SettingsView: View {
         }
         .formStyle(.grouped)
         .padding()
-        .frame(width: 520, height: 420)
+        .frame(minWidth: 480, minHeight: 360)
+        .alert("Screen Recording Required", isPresented: $appState.showPermissionAlert) {
+            Button("Open System Settings") {
+                ScreenshotCaptureService.openScreenRecordingSettings()
+            }
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(appState.permissionAlertMessage)
+        }
+        .onAppear {
+            AppState.shared.refreshScreenRecordingPermission()
+        }
         .onDisappear {
             stopRecording()
         }

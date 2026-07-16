@@ -5,6 +5,12 @@ struct CaptureToolbarView: View {
 
     var body: some View {
         HStack(spacing: 16) {
+            Image(systemName: "line.3.horizontal")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(.white.opacity(0.45))
+                .help("Drag to move toolbar")
+                .appKitTooltip("Drag to move toolbar")
+
             modeButton(.window)
             modeButton(.display)
             modeButton(.selection)
@@ -35,6 +41,7 @@ struct CaptureToolbarView: View {
             .menuStyle(.borderlessButton)
             .disabled(session.mode != .selection)
             .help("Aspect ratio (selection mode)")
+            .appKitTooltip("Aspect ratio (selection mode)")
 
             Spacer().frame(width: 8)
 
@@ -49,6 +56,7 @@ struct CaptureToolbarView: View {
             }
             .buttonStyle(.plain)
             .help("Capture")
+            .appKitTooltip("Capture")
 
             Button {
                 session.onCancel?()
@@ -61,10 +69,11 @@ struct CaptureToolbarView: View {
             }
             .buttonStyle(.plain)
             .help("Cancel (Esc)")
+            .appKitTooltip("Cancel (Esc)")
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 12)
-        .background(.ultraThinMaterial, in: Capsule())
+        .scratioGlassBackground(Capsule())
         .overlay(
             Capsule()
                 .strokeBorder(Color.white.opacity(0.15), lineWidth: 1)
@@ -90,5 +99,6 @@ struct CaptureToolbarView: View {
         }
         .buttonStyle(.plain)
         .help(mode.title)
+        .appKitTooltip(mode.title)
     }
 }

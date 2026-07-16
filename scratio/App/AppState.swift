@@ -18,33 +18,63 @@ final class AppState {
         didSet { AppPreferences.aspectRatio = aspectRatio }
     }
 
-    var captureMode: CaptureMode = .selection
+    var captureMode: CaptureMode = AppPreferences.captureMode {
+        didSet { AppPreferences.captureMode = captureMode }
+    }
+
     var isCapturing = false
     var selectedScreenshot: CapturedScreenshot?
     var statusMessage: String?
     var showPermissionAlert = false
     var permissionAlertMessage = ""
+    /// True when Screen Recording is not granted — Gallery shows a persistent banner.
+    var needsScreenRecordingPermission = false
     /// Bumped to request the Gallery window from a SwiftUI scene that owns `openWindow`.
     var galleryOpenToken: Int = 0
 
     let captureCoordinator = CaptureCoordinator()
+    private let toastController = ToastWindowController()
 
     private init() {
         reloadScreenshots()
+        refreshScreenRecordingPermission()
     }
 
     func reloadScreenshots() {
         screenshots = ScreenshotStore.shared.listScreenshots(sortOrder: sortOrder)
     }
 
+    func refreshScreenRecordingPermission() {
+        needsScreenRecordingPermission = !ScreenshotCaptureService.hasScreenCaptureAccess()
+    }
+
+    func requestScreenRecordingPermission() {
+        _ = ScreenshotCaptureService.requestScreenCaptureAccess()
+        refreshScreenRecordingPermission()
+        if needsScreenRecordingPermission {
+            permissionAlertMessage = ScreenshotCaptureService.permissionDeniedMessage
+            showPermissionAlert = true
+        }
+    }
+
+    func showCapturePermissionError(_ error: ScreenshotCaptureService.CaptureError) {
+        permissionAlertMessage = error.localizedDescription ?? "Capture failed."
+        showPermissionAlert = true
+        needsScreenRecordingPermission = !ScreenshotCaptureService.hasScreenCaptureAccess()
+        isCapturing = false
+    }
+
     func startCapture() {
         guard !isCapturing else { return }
 
+        refreshScreenRecordingPermission()
         if !ScreenshotCaptureService.hasScreenCaptureAccess() {
-            let granted = ScreenshotCaptureService.requestScreenCaptureAccess()
-            if !granted && !ScreenshotCaptureService.hasScreenCaptureAccess() {
-                permissionAlertMessage = ScreenshotCaptureService.CaptureError.permissionDenied.localizedDescription
+            _ = ScreenshotCaptureService.requestScreenCaptureAccess()
+            refreshScreenRecordingPermission()
+            if !ScreenshotCaptureService.hasScreenCaptureAccess() {
+                permissionAlertMessage = ScreenshotCaptureService.permissionDeniedMessage
                 showPermissionAlert = true
+                needsScreenRecordingPermission = true
                 return
             }
         }
@@ -88,6 +118,7 @@ final class AppState {
     func copyToClipboard(_ screenshot: CapturedScreenshot) {
         if ClipboardService.copy(contentsOf: screenshot.fileURL) {
             statusMessage = "Copied to clipboard"
+            showClipboardToast()
         } else {
             statusMessage = "Failed to copy screenshot"
         }
@@ -118,7 +149,7 @@ final class AppState {
         mode: CaptureMode,
         ratio: AspectRatioOption
     ) async {
-        ClipboardService.copy(image)
+        let didCopy = ClipboardService.copy(image)
 
         do {
             let item = try ScreenshotStore.shared.save(
@@ -127,7 +158,12 @@ final class AppState {
                 captureMode: mode
             )
             reloadScreenshots()
-            statusMessage = "Screenshot copied & saved"
+            if didCopy {
+                statusMessage = "Screenshot copied & saved"
+                showClipboardToast()
+            } else {
+                statusMessage = "Failed to copy screenshot"
+            }
             selectedScreenshot = item
 
             if AppPreferences.openGalleryAfterCapture {
@@ -138,6 +174,12 @@ final class AppState {
         }
 
         isCapturing = false
+    }
+
+    private func showClipboardToast() {
+        let message = AppPreferences.clipboardToastMessage
+        let screen = NSScreen.screens.first { $0.frame.contains(NSEvent.mouseLocation) } ?? NSScreen.main
+        toastController.show(message: message, on: screen)
     }
 }
 

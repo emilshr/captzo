@@ -1,64 +1,157 @@
-import Foundation
 import Carbon.HIToolbox
+import CoreGraphics
+import Foundation
 
 enum AppPreferences {
+    /// Injectable for tests; defaults to `.standard`.
+    nonisolated(unsafe) static var defaults: UserDefaults = .standard
+
     static let aspectRatioKey = "aspectRatio"
     static let sortOrderKey = "gallerySortOrder"
     static let hotkeyKeyCodeKey = "hotkeyKeyCode"
     static let hotkeyModifiersKey = "hotkeyModifiers"
     static let openGalleryAfterCaptureKey = "openGalleryAfterCapture"
     static let hasConfiguredHotkeyKey = "hasConfiguredHotkey"
+    static let captureModeKey = "captureMode"
+    static let selectionRectKey = "selectionRect"
+    static let toolbarOriginKey = "toolbarOrigin"
+    static let clipboardToastMessageKey = "clipboardToastMessage"
 
     /// Default: ⌘⇧6
     static let defaultHotkeyKeyCode: UInt32 = UInt32(kVK_ANSI_6)
     static let defaultHotkeyModifiers: UInt32 = UInt32(cmdKey | shiftKey)
+    static let defaultClipboardToastMessage = "Copied to clipboard"
 
     static var aspectRatio: AspectRatioOption {
         get {
-            let raw = UserDefaults.standard.string(forKey: aspectRatioKey) ?? AspectRatioOption.oneToOne.rawValue
+            let raw = defaults.string(forKey: aspectRatioKey) ?? AspectRatioOption.oneToOne.rawValue
             return AspectRatioOption(rawValue: raw) ?? .oneToOne
         }
         set {
-            UserDefaults.standard.set(newValue.rawValue, forKey: aspectRatioKey)
+            defaults.set(newValue.rawValue, forKey: aspectRatioKey)
+        }
+    }
+
+    static var captureMode: CaptureMode {
+        get {
+            let raw = defaults.string(forKey: captureModeKey) ?? CaptureMode.selection.rawValue
+            return CaptureMode(rawValue: raw) ?? .selection
+        }
+        set {
+            defaults.set(newValue.rawValue, forKey: captureModeKey)
         }
     }
 
     static var sortOrder: GallerySortOrder {
         get {
-            let raw = UserDefaults.standard.string(forKey: sortOrderKey) ?? GallerySortOrder.newestFirst.rawValue
+            let raw = defaults.string(forKey: sortOrderKey) ?? GallerySortOrder.newestFirst.rawValue
             return GallerySortOrder(rawValue: raw) ?? .newestFirst
         }
         set {
-            UserDefaults.standard.set(newValue.rawValue, forKey: sortOrderKey)
+            defaults.set(newValue.rawValue, forKey: sortOrderKey)
         }
     }
 
     static var hotkeyKeyCode: UInt32 {
         get {
-            if UserDefaults.standard.object(forKey: hotkeyKeyCodeKey) == nil {
+            if defaults.object(forKey: hotkeyKeyCodeKey) == nil {
                 return defaultHotkeyKeyCode
             }
-            return UInt32(UserDefaults.standard.integer(forKey: hotkeyKeyCodeKey))
+            return UInt32(defaults.integer(forKey: hotkeyKeyCodeKey))
         }
         set {
-            UserDefaults.standard.set(Int(newValue), forKey: hotkeyKeyCodeKey)
+            defaults.set(Int(newValue), forKey: hotkeyKeyCodeKey)
         }
     }
 
     static var hotkeyModifiers: UInt32 {
         get {
-            if UserDefaults.standard.object(forKey: hotkeyModifiersKey) == nil {
+            if defaults.object(forKey: hotkeyModifiersKey) == nil {
                 return defaultHotkeyModifiers
             }
-            return UInt32(UserDefaults.standard.integer(forKey: hotkeyModifiersKey))
+            return UInt32(defaults.integer(forKey: hotkeyModifiersKey))
         }
         set {
-            UserDefaults.standard.set(Int(newValue), forKey: hotkeyModifiersKey)
+            defaults.set(Int(newValue), forKey: hotkeyModifiersKey)
         }
     }
 
     static var openGalleryAfterCapture: Bool {
-        get { UserDefaults.standard.bool(forKey: openGalleryAfterCaptureKey) }
-        set { UserDefaults.standard.set(newValue, forKey: openGalleryAfterCaptureKey) }
+        get { defaults.bool(forKey: openGalleryAfterCaptureKey) }
+        set { defaults.set(newValue, forKey: openGalleryAfterCaptureKey) }
+    }
+
+    static var clipboardToastMessage: String {
+        get {
+            let saved = defaults.string(forKey: clipboardToastMessageKey)?
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            if let saved, !saved.isEmpty {
+                return saved
+            }
+            return defaultClipboardToastMessage
+        }
+        set {
+            let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
+            defaults.set(trimmed, forKey: clipboardToastMessageKey)
+        }
+    }
+
+    static var selectionRect: CGRect? {
+        get {
+            guard let dict = defaults.dictionary(forKey: selectionRectKey) else { return nil }
+            guard
+                let x = cgFloat(dict["x"]),
+                let y = cgFloat(dict["y"]),
+                let w = cgFloat(dict["width"]),
+                let h = cgFloat(dict["height"])
+            else { return nil }
+            return CGRect(x: x, y: y, width: w, height: h)
+        }
+        set {
+            guard let rect = newValue else {
+                defaults.removeObject(forKey: selectionRectKey)
+                return
+            }
+            defaults.set(
+                [
+                    "x": Double(rect.origin.x),
+                    "y": Double(rect.origin.y),
+                    "width": Double(rect.size.width),
+                    "height": Double(rect.size.height),
+                ],
+                forKey: selectionRectKey
+            )
+        }
+    }
+
+    static var toolbarOrigin: CGPoint? {
+        get {
+            guard let dict = defaults.dictionary(forKey: toolbarOriginKey) else { return nil }
+            guard let x = cgFloat(dict["x"]), let y = cgFloat(dict["y"]) else { return nil }
+            return CGPoint(x: x, y: y)
+        }
+        set {
+            guard let point = newValue else {
+                defaults.removeObject(forKey: toolbarOriginKey)
+                return
+            }
+            defaults.set(
+                ["x": Double(point.x), "y": Double(point.y)],
+                forKey: toolbarOriginKey
+            )
+        }
+    }
+
+    private static func cgFloat(_ value: Any?) -> CGFloat? {
+        if let number = value as? NSNumber {
+            return CGFloat(number.doubleValue)
+        }
+        if let double = value as? Double {
+            return CGFloat(double)
+        }
+        if let float = value as? CGFloat {
+            return float
+        }
+        return nil
     }
 }
