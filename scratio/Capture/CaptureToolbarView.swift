@@ -3,9 +3,15 @@ import SwiftUI
 struct CaptureToolbarView: View {
     @Bindable var session: CaptureSessionState
 
+    private static let quickAspectRatios: [AspectRatioOption] = [
+        .oneToOne,
+        .sixteenToNine,
+        .nineToSixteen
+    ]
+
     var body: some View {
         scratioGlassContainer(spacing: 16) {
-            HStack(spacing: 16) {
+            HStack(spacing: 12) {
                 Image(systemName: "line.3.horizontal")
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(.white.opacity(0.45))
@@ -18,6 +24,10 @@ struct CaptureToolbarView: View {
 
                 Divider()
                     .frame(height: 28)
+
+                ForEach(Self.quickAspectRatios) { option in
+                    aspectRatioQuickToggle(option)
+                }
 
                 AspectRatioMenu(
                     selection: Binding(
@@ -88,5 +98,38 @@ struct CaptureToolbarView: View {
         .buttonStyle(.plain)
         .help(mode.title)
         .appKitTooltip(mode.title)
+    }
+
+    @ViewBuilder
+    private func aspectRatioQuickToggle(_ option: AspectRatioOption) -> some View {
+        let isSelected = session.aspectRatio == option
+        let isEnabled = session.mode == .selection
+        Button {
+            session.setAspectRatio(option)
+        } label: {
+            HStack(spacing: 5) {
+                Image(nsImage: AspectRatioGlyph.nsImage(
+                    option: option,
+                    size: 14,
+                    color: isSelected
+                        ? NSColor(Color.accentColor)
+                        : NSColor.white.withAlphaComponent(0.85)
+                ))
+                Text(option.displayName)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(isSelected ? Color.accentColor : Color.white.opacity(0.85))
+            }
+            .padding(.horizontal, 8)
+            .frame(height: 36)
+            .background(
+                isSelected ? Color.white.opacity(0.18) : Color.clear,
+                in: RoundedRectangle(cornerRadius: 8)
+            )
+        }
+        .buttonStyle(.plain)
+        .disabled(!isEnabled)
+        .opacity(isEnabled ? 1 : 0.4)
+        .help(option.displayName)
+        .appKitTooltip(option.displayName)
     }
 }

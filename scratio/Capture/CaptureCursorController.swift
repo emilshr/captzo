@@ -48,31 +48,54 @@ final class CaptureCursorController {
     }
 
     private static func makeScreenshotCursor() -> NSCursor {
-        let config = NSImage.SymbolConfiguration(pointSize: 18, weight: .medium)
-        let symbol = NSImage(systemSymbolName: "camera.viewfinder", accessibilityDescription: "Capture")
-            ?? NSImage(size: NSSize(width: 24, height: 24))
-        let image = symbol.withSymbolConfiguration(config) ?? symbol
-        image.isTemplate = true
-
         let paddedSize = NSSize(width: 28, height: 28)
-        let padded = NSImage(size: paddedSize, flipped: false) { _ in
-            let origin = NSPoint(
-                x: (paddedSize.width - image.size.width) / 2,
-                y: (paddedSize.height - image.size.height) / 2
+        let symbolSize: CGFloat = 18
+        let config = NSImage.SymbolConfiguration(pointSize: symbolSize, weight: .semibold)
+        let base = NSImage(systemSymbolName: "camera.viewfinder", accessibilityDescription: "Capture")
+            ?? NSImage(size: NSSize(width: symbolSize, height: symbolSize))
+        let symbol = base.withSymbolConfiguration(config) ?? base
+
+        let outline = tintedSymbol(symbol, color: .black, size: symbolSize)
+        let fill = tintedSymbol(symbol, color: .white, size: symbolSize)
+
+        let padded = NSImage(size: paddedSize, flipped: false) { bounds in
+            let drawRect = NSRect(
+                x: (bounds.width - symbolSize) / 2,
+                y: (bounds.height - symbolSize) / 2,
+                width: symbolSize,
+                height: symbolSize
             )
-            image.draw(
-                in: NSRect(origin: origin, size: image.size),
-                from: .zero,
-                operation: .sourceOver,
-                fraction: 1
-            )
+            let outlineOffsets: [(CGFloat, CGFloat)] = [
+                (-1, 0), (1, 0), (0, -1), (0, 1),
+                (-1, -1), (-1, 1), (1, -1), (1, 1)
+            ]
+            for (offsetX, offsetY) in outlineOffsets {
+                outline.draw(
+                    in: drawRect.offsetBy(dx: offsetX, dy: offsetY),
+                    from: .zero,
+                    operation: .sourceOver,
+                    fraction: 1
+                )
+            }
+            fill.draw(in: drawRect, from: .zero, operation: .sourceOver, fraction: 1)
             return true
         }
-        padded.isTemplate = true
+        padded.isTemplate = false
 
         return NSCursor(
             image: padded,
             hotSpot: NSPoint(x: paddedSize.width / 2, y: paddedSize.height / 2)
         )
+    }
+
+    private static func tintedSymbol(_ symbol: NSImage, color: NSColor, size: CGFloat) -> NSImage {
+        let image = NSImage(size: NSSize(width: size, height: size), flipped: false) { rect in
+            symbol.draw(in: rect, from: .zero, operation: .sourceOver, fraction: 1)
+            color.set()
+            rect.fill(using: .sourceAtop)
+            return true
+        }
+        image.isTemplate = false
+        return image
     }
 }

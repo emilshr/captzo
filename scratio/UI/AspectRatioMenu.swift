@@ -34,6 +34,7 @@ struct AspectRatioMenu: View {
         } label: {
             labelContent
         }
+        .labelStyle(.titleAndIcon)
         .disabled(isDisabled)
         .menuStyle(.borderlessButton)
     }
@@ -48,8 +49,13 @@ struct AspectRatioMenu: View {
                         .font(.system(size: 12, weight: .medium))
                     Text("All")
                 } else {
-                    AspectRatioGlyph(option: selection, size: 14, color: selection.badgeColor)
+                    Image(nsImage: AspectRatioGlyph.nsImage(
+                        option: selection,
+                        size: 14,
+                        color: .white.withAlphaComponent(0.9)
+                    ))
                     Text(selection.displayName)
+                        .foregroundStyle(.white.opacity(0.9))
                 }
             }
             .padding(.horizontal, 10)
