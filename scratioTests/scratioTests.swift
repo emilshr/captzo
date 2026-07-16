@@ -340,6 +340,28 @@ struct WindowHitTestingTests {
         #expect(hit == 20)
     }
 
+    @Test func frontmostWindowIDPrefersDisplaySizedFrontOverOccludedBack() {
+        let display = CGRect(x: 0, y: 0, width: 1440, height: 900)
+        let finder = ScreenGeometry.WindowHitCandidate(
+            id: 1,
+            frame: CGRect(x: 100, y: 100, width: 800, height: 600),
+            windowLayer: 0,
+            sourceIndex: 0
+        )
+        let cursor = ScreenGeometry.WindowHitCandidate(
+            id: 2,
+            frame: display,
+            windowLayer: 0,
+            sourceIndex: 1
+        )
+        let hit = ScreenGeometry.frontmostWindowID(
+            at: CGPoint(x: 200, y: 200),
+            orderedWindowIDs: [2, 1],
+            candidates: [finder, cursor]
+        )
+        #expect(hit == 2)
+    }
+
     @Test func pickableWindowTitleRequiresNonEmptyValue() {
         #expect(ScreenGeometry.isPickableWindowTitle("Finder"))
         #expect(!ScreenGeometry.isPickableWindowTitle(""))
@@ -351,14 +373,6 @@ struct WindowHitTestingTests {
         #expect(ScreenGeometry.isPickableWindowLayer(0))
         #expect(!ScreenGeometry.isPickableWindowLayer(5))
         #expect(!ScreenGeometry.isPickableWindowLayer(-1))
-    }
-
-    @Test func nearDisplaySizedDetectsBackdropFrames() {
-        let display = CGRect(x: 0, y: 0, width: 1440, height: 900)
-        let backdrop = CGRect(x: 0, y: 0, width: 1400, height: 880)
-        let normal = CGRect(x: 100, y: 100, width: 800, height: 600)
-        #expect(ScreenGeometry.isNearDisplaySized(frame: backdrop, displayFrames: [display]))
-        #expect(!ScreenGeometry.isNearDisplaySized(frame: normal, displayFrames: [display]))
     }
 }
 

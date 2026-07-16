@@ -146,16 +146,14 @@ enum ScreenshotCaptureService {
         try await ensurePermission()
         let content = try await SCShareableContent.excludingDesktopWindows(false, onScreenWindowsOnly: true)
         let ownPID = ProcessInfo.processInfo.processIdentifier
-        let displayFrames = NSScreen.screens.map(\.frame)
         return content.windows.filter { window in
-            isPickableWindow(window, ownPID: ownPID, displayFrames: displayFrames)
+            isPickableWindow(window, ownPID: ownPID)
         }
     }
 
     static func isPickableWindow(
         _ window: SCWindow,
-        ownPID: pid_t = ProcessInfo.processInfo.processIdentifier,
-        displayFrames: [CGRect] = NSScreen.screens.map(\.frame)
+        ownPID: pid_t = ProcessInfo.processInfo.processIdentifier
     ) -> Bool {
         guard let app = window.owningApplication else { return false }
         if app.processID == ownPID { return false }
@@ -163,10 +161,6 @@ enum ScreenshotCaptureService {
         if !window.isOnScreen { return false }
         if !ScreenGeometry.isPickableWindowTitle(window.title) { return false }
         if !ScreenGeometry.isPickableWindowLayer(window.windowLayer) { return false }
-        let appKitFrame = convertSCWindowFrameToAppKit(window.frame)
-        if ScreenGeometry.isNearDisplaySized(frame: appKitFrame, displayFrames: displayFrames) {
-            return false
-        }
         return true
     }
 

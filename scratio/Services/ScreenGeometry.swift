@@ -129,21 +129,6 @@ enum ScreenGeometry {
         layer == 0
     }
 
-    /// True when a frame covers most of a display (backdrop / full-screen helper windows).
-    static func isNearDisplaySized(
-        frame: CGRect,
-        displayFrames: [CGRect],
-        areaThreshold: CGFloat = 0.95
-    ) -> Bool {
-        let area = frame.width * frame.height
-        guard area > 0 else { return false }
-        return displayFrames.contains { display in
-            let displayArea = display.width * display.height
-            guard displayArea > 0 else { return false }
-            return frame.intersects(display) && area >= displayArea * areaThreshold
-        }
-    }
-
     /// Whether a toolbar origin is still on a known screen (top-left of toolbar frame intersects any screen).
     static func isValidToolbarOrigin(_ origin: CGPoint, size: CGSize, in frames: [CGRect]) -> Bool {
         let rect = CGRect(origin: origin, size: size)
