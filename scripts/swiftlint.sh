@@ -14,7 +14,7 @@ if ! command -v swiftlint >/dev/null; then
 fi
 
 BASELINE_SRC="${ROOT}/.swiftlint.baseline"
-BASELINE_ABS="${TMPDIR:-/tmp}/scratio.swiftlint.baseline.$$.json"
+BASELINE_ABS="${TMPDIR:-/tmp}/captzo.swiftlint.baseline.$$.json"
 
 python3 - "$BASELINE_SRC" "$BASELINE_ABS" "$ROOT" <<'PY'
 import json, pathlib, sys
@@ -33,4 +33,4 @@ PY
 cleanup() { rm -f "$BASELINE_ABS"; }
 trap cleanup EXIT
 
-swiftlint lint --strict --baseline "$BASELINE_ABS" scratio
+swiftlint lint --strict --baseline "$BASELINE_ABS" Captzo

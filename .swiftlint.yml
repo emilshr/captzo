@@ -12,7 +12,7 @@ opt_in_rules:
   - unhandled_throwing_task
 
 included:
-  - scratio
+  - Captzo
 
 excluded:
   - DerivedData

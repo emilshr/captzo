@@ -86,9 +86,9 @@ jobs:
       - name: Run unit tests
         run: |
           xcodebuild test \
-            -scheme scratio \
+            -scheme Captzo \
             -destination 'platform=macOS' \
-            -only-testing:scratioTests \
+            -only-testing:CaptzoTests \
             -derivedDataPath build/DerivedData
 
       - name: Package DMG
@@ -104,17 +104,17 @@ jobs:
           APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
           APP_STORE_CONNECT_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
           APP_STORE_CONNECT_API_KEY_P8: ${{ secrets.APP_STORE_CONNECT_API_KEY_P8 }}
-        run: ./scripts/notarize.sh "build/dmg/Scratio-${{ steps.version.outputs.version }}.dmg"
+        run: ./scripts/notarize.sh "build/dmg/Captzo-${{ steps.version.outputs.version }}.dmg"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.version.outputs.tag }}
-          name: Scratio ${{ steps.version.outputs.version }}
+          name: Captzo ${{ steps.version.outputs.version }}
           generate_release_notes: true
           files: |
-            build/dmg/Scratio-${{ steps.version.outputs.version }}.dmg
-            build/dmg/Scratio-${{ steps.version.outputs.version }}.dmg.sha256
+            build/dmg/Captzo-${{ steps.version.outputs.version }}.dmg
+            build/dmg/Captzo-${{ steps.version.outputs.version }}.dmg.sha256
 
       - name: Cleanup signing material
         if: always()

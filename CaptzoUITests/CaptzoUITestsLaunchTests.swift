@@ -1,13 +1,13 @@
 //
-//  scratioUITestsLaunchTests.swift
-//  scratioUITests
+//  CaptzoUITestsLaunchTests.swift
+//  CaptzoUITests
 //
 //  Created by Emil Sharier on 14/07/26.
 //
 
 import XCTest
 
-final class scratioUITestsLaunchTests: XCTestCase {
+final class CaptzoUITestsLaunchTests: XCTestCase {
 
     override class var runsForEachTargetApplicationUIConfiguration: Bool {
         true

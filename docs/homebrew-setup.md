@@ -1,23 +1,23 @@
-# Scratio Homebrew & Release Setup
+# Captzo Homebrew & Release Setup
 
-This guide covers the one-time Apple / GitHub setup required to ship notarized DMGs and install Scratio via a personal Homebrew tap.
+This guide covers the one-time Apple / GitHub setup required to ship notarized DMGs and install Captzo via a personal Homebrew tap.
 
 ## What users run
 
 After the tap is published and a release exists:
 
 ```bash
-brew tap emilshr/scratio
-brew install --cask scratio
+brew tap emilshr/captzo
+brew install --cask captzo
 ```
 
-Then grant **Screen Recording** under System Settings → Privacy & Security → Screen Recording, and relaunch Scratio if prompted.
+Then grant **Screen Recording** under System Settings → Privacy & Security → Screen Recording, and relaunch Captzo if prompted.
 
 ## Prerequisites
 
 1. Paid **Apple Developer Program** membership
-2. Access to the GitHub repo `emilshr/scratio`
-3. Ability to create a second GitHub repo for the tap: `emilshr/homebrew-scratio`
+2. Access to the GitHub repo `emilshr/captzo`
+3. Ability to create a second GitHub repo for the tap: `emilshr/homebrew-captzo`
 
 ## 1. Developer ID certificate
 
@@ -47,7 +47,7 @@ Find your **Team ID** (10 characters) in the Apple Developer membership page —
 Optional local credential store:
 
 ```bash
-xcrun notarytool store-credentials "scratio-notary" \
+xcrun notarytool store-credentials "captzo-notary" \
   --key /path/to/AuthKey_XXXX.p8 \
   --key-id YOUR_KEY_ID \
   --issuer YOUR_ISSUER_ID
@@ -57,7 +57,7 @@ CI uses the env-var form via `scripts/notarize.sh`, not the keychain profile nam
 
 ## 3. GitHub Actions secrets
 
-In `emilshr/scratio` → Settings → Secrets and variables → Actions, add:
+In `emilshr/captzo` → Settings → Secrets and variables → Actions, add:
 
 | Secret | Value |
 |--------|--------|
@@ -85,8 +85,8 @@ The workflow will:
 1. Import the Developer ID cert and resolve the full signing identity
 2. Run unit tests
 3. Archive + export (hard-fail if export fails — no unsigned fallback)
-4. Re-sign `Scratio.app`, verify with `codesign --verify`
-5. Build `Scratio-<version>.dmg`
+4. Re-sign `Captzo.app`, verify with `codesign --verify`
+5. Build `Captzo-<version>.dmg`
 6. Notarize + staple + Gatekeeper assess
 7. Publish a GitHub Release with the DMG and `.sha256` sidecar
 
@@ -100,30 +100,30 @@ export CODE_SIGN_IDENTITY="Developer ID Application: Your Name (XXXXXXXXXX)"
 export APP_STORE_CONNECT_API_KEY_ID=...
 export APP_STORE_CONNECT_ISSUER_ID=...
 export APP_STORE_CONNECT_API_KEY_P8="$(cat AuthKey_xxx.p8)"
-./scripts/notarize.sh build/dmg/Scratio-1.0.0.dmg
+./scripts/notarize.sh build/dmg/Captzo-1.0.0.dmg
 ```
 
 ## 5. Create the Homebrew tap
 
-1. Create a public GitHub repo named **`homebrew-scratio`** under your account  
-   (`brew tap emilshr/scratio` maps to `emilshr/homebrew-scratio`)
+1. Create a public GitHub repo named **`homebrew-captzo`** under your account  
+   (`brew tap emilshr/captzo` maps to `emilshr/homebrew-captzo`)
 2. Copy the in-repo template:
 
 ```bash
-mkdir -p /path/to/homebrew-scratio/Casks
-cp homebrew/Casks/scratio.rb /path/to/homebrew-scratio/Casks/scratio.rb
+mkdir -p /path/to/homebrew-captzo/Casks
+cp homebrew/Casks/captzo.rb /path/to/homebrew-captzo/Casks/captzo.rb
 ```
 
 3. After each GitHub Release, update the cask:
 
 ```ruby
 version "1.0.0"   # must match the tag without the leading v
-sha256 "<hash>"   # contents of Scratio-1.0.0.dmg.sha256 (hash only)
+sha256 "<hash>"   # contents of Captzo-1.0.0.dmg.sha256 (hash only)
 ```
 
 The release asset URL must match:
 
-`https://github.com/emilshr/scratio/releases/download/v#{version}/Scratio-#{version}.dmg`
+`https://github.com/emilshr/captzo/releases/download/v#{version}/Captzo-#{version}.dmg`
 
 4. Commit and push the tap repo.
 
@@ -131,11 +131,11 @@ The release asset URL must match:
 
 ```bash
 VERSION=1.0.0
-HASH=$(curl -fsSL "https://github.com/emilshr/scratio/releases/download/v${VERSION}/Scratio-${VERSION}.dmg.sha256")
-# Edit Casks/scratio.rb version + sha256, then:
-cd /path/to/homebrew-scratio
-git add Casks/scratio.rb
-git commit -m "scratio ${VERSION}"
+HASH=$(curl -fsSL "https://github.com/emilshr/captzo/releases/download/v${VERSION}/Captzo-${VERSION}.dmg.sha256")
+# Edit Casks/captzo.rb version + sha256, then:
+cd /path/to/homebrew-captzo
+git add Casks/captzo.rb
+git commit -m "captzo ${VERSION}"
 git push
 ```
 
@@ -143,7 +143,7 @@ Users upgrade with:
 
 ```bash
 brew update
-brew upgrade --cask scratio
+brew upgrade --cask captzo
 ```
 
 ## 6. Verify install
@@ -151,9 +151,9 @@ brew upgrade --cask scratio
 On a clean Mac (or a VM):
 
 ```bash
-brew tap emilshr/scratio
-brew install --cask scratio
-open /Applications/Scratio.app
+brew tap emilshr/captzo
+brew install --cask captzo
+open /Applications/Captzo.app
 ```
 
 Confirm:
@@ -178,4 +178,4 @@ Confirm:
 - Release workflow: [`.github/workflows/release-dmg.yml`](../.github/workflows/release-dmg.yml)
 - Package script: [`scripts/package_dmg.sh`](../scripts/package_dmg.sh)
 - Notarize script: [`scripts/notarize.sh`](../scripts/notarize.sh)
-- Cask template: [`homebrew/Casks/scratio.rb`](../homebrew/Casks/scratio.rb)
+- Cask template: [`homebrew/Casks/captzo.rb`](../homebrew/Casks/captzo.rb)

@@ -12,7 +12,7 @@ struct CaptureToolbarView: View {
     ]
 
     var body: some View {
-        scratioGlassContainer(spacing: 16) {
+        captzoGlassContainer(spacing: 16) {
             HStack(spacing: 12) {
                 Image(systemName: "line.3.horizontal")
                     .font(.system(size: 12, weight: .semibold))
@@ -83,7 +83,7 @@ struct CaptureToolbarView: View {
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 12)
-            .scratioGlassBackground(Capsule())
+            .captzoGlassBackground(Capsule())
             .overlay(
                 Capsule()
                     .strokeBorder(Color.white.opacity(0.15), lineWidth: 1)

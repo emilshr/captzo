@@ -22,7 +22,7 @@ final class OverlayWindowController: NSObject, NSWindowDelegate {
     override init() {
         super.init()
         languageObserver = NotificationCenter.default.addObserver(
-            forName: .scratioLanguageDidChange,
+            forName: .captzoLanguageDidChange,
             object: nil,
             queue: .main
         ) { [weak self] _ in
@@ -160,7 +160,7 @@ final class OverlayWindowController: NSObject, NSWindowDelegate {
             screen: screen,
             screenFrame: screen.frame
         )
-        .scratioLocalized(LanguageStore.shared)
+        .captzoLocalized(LanguageStore.shared)
         window.contentView = NSHostingView(rootView: view)
         return window
     }
@@ -200,7 +200,7 @@ final class OverlayWindowController: NSObject, NSWindowDelegate {
 
     private func toolbarRootView(size: NSSize) -> some View {
         CaptureToolbarView(session: session)
-            .scratioLocalized(LanguageStore.shared)
+            .captzoLocalized(LanguageStore.shared)
             .frame(width: size.width, height: size.height)
     }
 
@@ -216,7 +216,7 @@ final class OverlayWindowController: NSObject, NSWindowDelegate {
                 screen: screen,
                 screenFrame: screen.frame
             )
-            .scratioLocalized(store)
+            .captzoLocalized(store)
             window.contentView = NSHostingView(rootView: view)
         }
         if let toolbarWindow {

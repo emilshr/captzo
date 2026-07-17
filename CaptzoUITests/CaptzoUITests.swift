@@ -1,13 +1,13 @@
 //
-//  scratioUITests.swift
-//  scratioUITests
+//  CaptzoUITests.swift
+//  CaptzoUITests
 //
 //  Created by Emil Sharier on 14/07/26.
 //
 
 import XCTest
 
-final class scratioUITests: XCTestCase {
+final class CaptzoUITests: XCTestCase {
 
     override func setUpWithError() throws {
         // Put setup code here. This method is called before the invocation of each test method in the class.

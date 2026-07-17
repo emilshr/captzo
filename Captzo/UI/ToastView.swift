@@ -4,7 +4,7 @@ struct ToastView: View {
     let message: String
 
     var body: some View {
-        scratioGlassContainer(spacing: 12) {
+        captzoGlassContainer(spacing: 12) {
             HStack(spacing: 10) {
                 Circle()
                     .fill(Color.green)
@@ -19,7 +19,7 @@ struct ToastView: View {
             .padding(.horizontal, 14)
             .padding(.vertical, 10)
             .frame(minWidth: 180, maxWidth: 360, alignment: .leading)
-            .scratioGlassBackground(Capsule())
+            .captzoGlassBackground(Capsule())
             .overlay(
                 Capsule()
                     .strokeBorder(Color.white.opacity(0.2), lineWidth: 1)
