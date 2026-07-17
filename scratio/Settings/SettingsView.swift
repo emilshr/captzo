@@ -4,6 +4,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @Environment(AppState.self) private var appState
+    @Environment(LanguageStore.self) private var languageStore
     @State private var hotkeyDisplay = HotkeyManager.displayString(
         keyCode: AppPreferences.hotkeyKeyCode,
         modifiers: AppPreferences.hotkeyModifiers
@@ -14,9 +15,19 @@ struct SettingsView: View {
 
     var body: some View {
         @Bindable var appState = appState
+        let languageCode = languageStore.resolvedLanguageCode
 
         ScrollView {
             Form {
+                Section("Language") {
+                    Picker("App Language", selection: languagePreferenceBinding) {
+                        ForEach(AppLanguagePreference.allCases) { option in
+                            Text(pickerLabel(for: option)).tag(option)
+                        }
+                    }
+                    .id(languageCode)
+                }
+
                 Section("Capture") {
                     LabeledContent("Default Aspect Ratio") {
                         AspectRatioMenu(
@@ -52,7 +63,10 @@ struct SettingsView: View {
                 }
 
                 Section("Feedback") {
-                    TextField("Copied to clipboard", text: $appState.clipboardToastMessage)
+                    TextField(
+                        L10n.tr("Copied to clipboard"),
+                        text: $appState.clipboardToastMessage
+                    )
                     Text("Shown after a screenshot is copied.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -62,7 +76,7 @@ struct SettingsView: View {
                     HStack {
                         Text("Shortcut")
                         Spacer()
-                        Text(isRecordingHotkey ? "Press keys…" : hotkeyDisplay)
+                        Text(isRecordingHotkey ? L10n.tr("Press keys…") : hotkeyDisplay)
                             .foregroundStyle(isRecordingHotkey ? .secondary : .primary)
                             .padding(.horizontal, 10)
                             .padding(.vertical, 4)
@@ -72,7 +86,7 @@ struct SettingsView: View {
                                     .strokeBorder(isRecordingHotkey ? Color.accentColor : Color.clear, lineWidth: 2)
                             )
 
-                        Button(isRecordingHotkey ? "Cancel" : "Record") {
+                        Button(isRecordingHotkey ? L10n.tr("Cancel") : L10n.tr("Record")) {
                             if isRecordingHotkey {
                                 stopRecording()
                             } else {
@@ -99,7 +113,11 @@ struct SettingsView: View {
 
                 Section("Permissions") {
                     LabeledContent("Screen Recording") {
-                        Text(ScreenshotCaptureService.hasScreenCaptureAccess() ? "Granted" : "Not Granted")
+                        Text(
+                            ScreenshotCaptureService.hasScreenCaptureAccess()
+                                ? L10n.tr("Granted")
+                                : L10n.tr("Not Granted")
+                        )
                             .foregroundStyle(
                                 ScreenshotCaptureService.hasScreenCaptureAccess() ? .green : .orange
                             )
@@ -144,6 +162,28 @@ struct SettingsView: View {
         }
         .onDisappear {
             stopRecording()
+        }
+    }
+
+    private var languagePreferenceBinding: Binding<AppLanguagePreference> {
+        Binding(
+            get: { languageStore.preference },
+            set: { languageStore.setPreference($0) }
+        )
+    }
+
+    private func pickerLabel(for option: AppLanguagePreference) -> String {
+        switch option {
+        case .system:
+            let code = AppLanguageResolver.resolveLanguageCode(
+                preference: .system,
+                preferredLanguageCodes: AppLanguageResolver.preferredLanguageCodesFromSystem(),
+                availableLocalizations: AppLanguageResolver.availableLocalizations()
+            )
+            let name = Locale.current.localizedString(forLanguageCode: code) ?? code
+            return String(localized: "System (\(name))", locale: languageStore.resolvedLocale)
+        default:
+            return option.pickerLabel
         }
     }
 

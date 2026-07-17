@@ -1,0 +1,70 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "NSScreenCaptureUsageDescription": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Captzo needs Screen Recording access to capture screenshots with aspect-ratio selection."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Captzo necesita acceso a Grabación de pantalla para capturar capturas con selección de relación de aspecto."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Captzo 需要屏幕录制权限才能按宽高比截取屏幕。"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Captzo はアスペクト比選択付きのスクリーンショットに画面収録へのアクセスが必要です。"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Captzo benötigt Zugriff auf die Bildschirmaufnahme, um Screenshots mit Seitenverhältnis-Auswahl zu erstellen."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Captzo a besoin de l’accès à l’enregistrement d’écran pour capturer des images avec sélection du format."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "O Captzo precisa de acesso à Gravação de tela para capturar com seleção de proporção."
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Captzo는 화면비 선택 스크린샷을 위해 화면 기록 접근 권한이 필요합니다."
+          }
+        },
+        "ar": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "يحتاج Captzo إلى إذن تسجيل الشاشة لالتقاط لقطات مع اختيار نسبة العرض إلى الارتفاع."
+          }
+        },
+        "hi": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "आस्पेक्ट अनुपात चयन के साथ स्क्रीनशॉट के लिए Captzo को स्क्रीन रिकॉर्डिंग पहुँच चाहिए।"
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

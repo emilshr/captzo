@@ -1,22 +1,29 @@
 import Foundation
 
 extension Date {
-    func scratioSidebarLabel(referenceDate: Date = Date(), calendar: Calendar = .current) -> String {
-        let time = formatted(date: .omitted, time: .shortened)
+    func scratioSidebarLabel(
+        referenceDate: Date = Date(),
+        calendar: Calendar = .current,
+        locale: Locale = L10n.currentLocale
+    ) -> String {
+        var calendar = calendar
+        calendar.locale = locale
+
+        let time = formatted(Date.FormatStyle(date: .omitted, time: .shortened).locale(locale))
 
         if calendar.isDateInToday(self) {
-            return "Today, \(time)"
+            return String(localized: "Today, \(time)", locale: locale)
         }
 
         if calendar.isDateInYesterday(self) {
-            return "Yesterday, \(time)"
+            return String(localized: "Yesterday, \(time)", locale: locale)
         }
 
         if calendar.isDate(self, equalTo: referenceDate, toGranularity: .weekOfYear) {
-            let weekday = formatted(.dateTime.weekday(.wide))
-            return "\(weekday), \(time)"
+            let weekday = formatted(Date.FormatStyle().locale(locale).weekday(.wide))
+            return String(localized: "\(weekday), \(time)", locale: locale)
         }
 
-        return formatted(date: .abbreviated, time: .shortened)
+        return formatted(Date.FormatStyle(date: .abbreviated, time: .shortened).locale(locale))
     }
 }

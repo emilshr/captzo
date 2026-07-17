@@ -44,7 +44,20 @@ final class AppState {
     var lastSelectedScreenshotID: UUID?
     var statusMessage: String?
     var showPermissionAlert = false
-    var permissionAlertMessage = ""
+    /// Reason for the permission alert so the message can be re-localized on language change.
+    var permissionAlertReason: PermissionAlertReason? {
+        didSet {
+            if permissionAlertReason == nil {
+                showPermissionAlert = false
+            }
+        }
+    }
+
+    /// Localized message for the current permission alert reason.
+    var permissionAlertMessage: String {
+        permissionAlertReason?.localizedMessage ?? ""
+    }
+
     /// True when Screen Recording is not granted — Gallery shows a persistent banner.
     var needsScreenRecordingPermission = false
     /// Bumped to request the Gallery window from a SwiftUI scene that owns `openWindow`.
@@ -187,14 +200,12 @@ final class AppState {
         _ = ScreenshotCaptureService.requestScreenCaptureAccess()
         refreshScreenRecordingPermission()
         if needsScreenRecordingPermission {
-            permissionAlertMessage = ScreenshotCaptureService.permissionDeniedMessage
-            showPermissionAlert = true
+            presentPermissionAlert(.denied)
         }
     }
 
     func showCapturePermissionError(_ error: ScreenshotCaptureService.CaptureError) {
-        permissionAlertMessage = error.localizedDescription ?? "Capture failed."
-        showPermissionAlert = true
+        presentPermissionAlert(.captureError(error))
         needsScreenRecordingPermission = !ScreenshotCaptureService.hasScreenCaptureAccess()
         isCapturing = false
     }
@@ -207,8 +218,7 @@ final class AppState {
             _ = ScreenshotCaptureService.requestScreenCaptureAccess()
             refreshScreenRecordingPermission()
             if !ScreenshotCaptureService.hasScreenCaptureAccess() {
-                permissionAlertMessage = ScreenshotCaptureService.permissionDeniedMessage
-                showPermissionAlert = true
+                presentPermissionAlert(.denied)
                 needsScreenRecordingPermission = true
                 return
             }
@@ -264,10 +274,10 @@ final class AppState {
 
     func copyToClipboard(_ screenshot: CapturedScreenshot) {
         if ClipboardService.copy(contentsOf: screenshot.fileURL) {
-            statusMessage = "Copied to clipboard"
+            statusMessage = L10n.tr("Copied to clipboard")
             showClipboardToast()
         } else {
-            statusMessage = "Failed to copy screenshot"
+            statusMessage = L10n.tr("Failed to copy screenshot")
         }
     }
 
@@ -284,7 +294,7 @@ final class AppState {
         NSApp.setActivationPolicy(.regular)
         NSApp.activate(ignoringOtherApps: true)
         if let window = NSApp.windows.first(where: {
-            $0.title == "Gallery" || $0.identifier?.rawValue == "gallery"
+            $0.identifier?.rawValue == "gallery"
         }) {
             window.makeKeyAndOrderFront(nil)
             return
@@ -315,10 +325,10 @@ final class AppState {
             )
             await reloadScreenshots()
             if didCopy {
-                statusMessage = "Screenshot copied & saved"
+                statusMessage = L10n.tr("Screenshot copied & saved")
                 showClipboardToast()
             } else {
-                statusMessage = "Failed to copy screenshot"
+                statusMessage = L10n.tr("Failed to copy screenshot")
             }
             selectOnly(item)
 
@@ -333,9 +343,33 @@ final class AppState {
     }
 
     private func showClipboardToast() {
-        let message = AppPreferences.clipboardToastMessage
+        let message: String
+        if AppPreferences.usesDefaultClipboardToastMessage {
+            message = L10n.tr("Copied to clipboard")
+        } else {
+            message = AppPreferences.clipboardToastMessage
+        }
         let screen = NSScreen.screens.first { $0.frame.contains(NSEvent.mouseLocation) } ?? NSScreen.main
         toastController.show(message: message, on: screen)
+    }
+
+    private func presentPermissionAlert(_ reason: PermissionAlertReason) {
+        permissionAlertReason = reason
+        showPermissionAlert = true
+    }
+}
+
+enum PermissionAlertReason: Equatable {
+    case denied
+    case captureError(ScreenshotCaptureService.CaptureError)
+
+    var localizedMessage: String {
+        switch self {
+        case .denied:
+            return ScreenshotCaptureService.permissionDeniedMessage
+        case .captureError(let error):
+            return error.localizedDescription ?? L10n.tr("Capture failed.")
+        }
     }
 }
 

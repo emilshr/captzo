@@ -17,10 +17,12 @@ enum AppPreferences {
     static let toolbarOriginKey = "toolbarOrigin"
     static let clipboardToastMessageKey = "clipboardToastMessage"
     static let aspectRatioBadgeColorsKey = "aspectRatioBadgeColors"
+    static let uiLanguageKey = "uiLanguage"
 
     /// Default: ⌘⇧6
     static let defaultHotkeyKeyCode: UInt32 = UInt32(kVK_ANSI_6)
     static let defaultHotkeyModifiers: UInt32 = UInt32(cmdKey | shiftKey)
+    /// English source key; display via `L10n.tr` when the user has not customized the toast.
     static let defaultClipboardToastMessage = "Copied to clipboard"
 
     static var aspectRatio: AspectRatioOption {
@@ -86,14 +88,36 @@ enum AppPreferences {
         get {
             let saved = defaults.string(forKey: clipboardToastMessageKey)?
                 .trimmingCharacters(in: .whitespacesAndNewlines)
-            if let saved, !saved.isEmpty {
+            if let saved, !saved.isEmpty, saved != defaultClipboardToastMessage {
                 return saved
             }
-            return defaultClipboardToastMessage
+            return ""
         }
         set {
             let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
-            defaults.set(trimmed, forKey: clipboardToastMessageKey)
+            if trimmed.isEmpty || trimmed == defaultClipboardToastMessage {
+                defaults.removeObject(forKey: clipboardToastMessageKey)
+            } else {
+                defaults.set(trimmed, forKey: clipboardToastMessageKey)
+            }
+        }
+    }
+
+    /// `true` when the toast still uses the built-in default (should be localized at display time).
+    static var usesDefaultClipboardToastMessage: Bool {
+        let saved = defaults.string(forKey: clipboardToastMessageKey)?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let saved, !saved.isEmpty else { return true }
+        return saved == defaultClipboardToastMessage
+    }
+
+    static var uiLanguage: AppLanguagePreference {
+        get {
+            let raw = defaults.string(forKey: uiLanguageKey) ?? AppLanguagePreference.system.rawValue
+            return AppLanguagePreference(rawValue: raw) ?? .system
+        }
+        set {
+            defaults.set(newValue.rawValue, forKey: uiLanguageKey)
         }
     }
 

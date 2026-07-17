@@ -15,8 +15,28 @@ final class OverlayWindowController: NSObject, NSWindowDelegate {
     private var toolbarWindow: NSWindow?
     private var interaction: CaptureOverlayInteraction?
     private let captureCursor = CaptureCursorController()
+    private var languageObserver: NSObjectProtocol?
 
     private(set) var session = CaptureSessionState()
+
+    override init() {
+        super.init()
+        languageObserver = NotificationCenter.default.addObserver(
+            forName: .scratioLanguageDidChange,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                self?.refreshLocalizedHostingRoots()
+            }
+        }
+    }
+
+    deinit {
+        if let languageObserver {
+            NotificationCenter.default.removeObserver(languageObserver)
+        }
+    }
 
     func show(
         mode: CaptureMode,
@@ -140,6 +160,7 @@ final class OverlayWindowController: NSObject, NSWindowDelegate {
             screen: screen,
             screenFrame: screen.frame
         )
+        .scratioLocalized(LanguageStore.shared)
         window.contentView = NSHostingView(rootView: view)
         return window
     }
@@ -173,11 +194,35 @@ final class OverlayWindowController: NSObject, NSWindowDelegate {
         window.isMovable = true
         window.isMovableByWindowBackground = true
         window.delegate = self
-        window.contentView = NSHostingView(
-            rootView: CaptureToolbarView(session: session)
-                .frame(width: size.width, height: size.height)
-        )
+        window.contentView = NSHostingView(rootView: toolbarRootView(size: size))
         return window
+    }
+
+    private func toolbarRootView(size: NSSize) -> some View {
+        CaptureToolbarView(session: session)
+            .scratioLocalized(LanguageStore.shared)
+            .frame(width: size.width, height: size.height)
+    }
+
+    private func refreshLocalizedHostingRoots() {
+        let store = LanguageStore.shared
+        for window in overlayWindows {
+            let screen = NSScreen.screens.first { $0.frame.equalTo(window.frame) }
+                ?? window.screen
+                ?? NSScreen.main
+            guard let screen else { continue }
+            let view = SelectionOverlayView(
+                session: session,
+                screen: screen,
+                screenFrame: screen.frame
+            )
+            .scratioLocalized(store)
+            window.contentView = NSHostingView(rootView: view)
+        }
+        if let toolbarWindow {
+            let size = toolbarWindow.frame.size
+            toolbarWindow.contentView = NSHostingView(rootView: toolbarRootView(size: size))
+        }
     }
 
     private func updateOverlayMousePassthrough() {

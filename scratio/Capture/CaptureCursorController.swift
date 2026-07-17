@@ -51,7 +51,7 @@ final class CaptureCursorController {
         let paddedSize = NSSize(width: 28, height: 28)
         let symbolSize: CGFloat = 18
         let config = NSImage.SymbolConfiguration(pointSize: symbolSize, weight: .semibold)
-        let base = NSImage(systemSymbolName: "camera.viewfinder", accessibilityDescription: "Capture")
+        let base = NSImage(systemSymbolName: "camera.viewfinder", accessibilityDescription: L10n.tr("Capture"))
             ?? NSImage(size: NSSize(width: symbolSize, height: symbolSize))
         let symbol = base.withSymbolConfiguration(config) ?? base
 

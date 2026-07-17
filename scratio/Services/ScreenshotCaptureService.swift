@@ -5,10 +5,11 @@ import Foundation
 import ScreenCaptureKit
 
 enum ScreenshotCaptureService {
-    static let screenRecordingRestartHint =
-        "After granting or changing Screen Recording permission, quit Captzo and relaunch it for capture to work."
+    static var screenRecordingRestartHint: String {
+        L10n.tr("permission.restart.hint")
+    }
 
-    enum CaptureError: LocalizedError {
+    enum CaptureError: LocalizedError, Equatable {
         case permissionDenied
         case permissionRestartRequired
         case noDisplay
@@ -22,22 +23,25 @@ enum ScreenshotCaptureService {
             case .permissionRestartRequired:
                 return permissionRestartRequiredMessage
             case .noDisplay:
-                return "No display available to capture."
+                return L10n.tr("No display available to capture.")
             case .captureFailed(let message):
-                return "Capture failed: \(message)"
+                return String(localized: "Capture failed: \(message)", locale: L10n.currentLocale)
             case .windowNotFound:
-                return "Selected window is no longer available."
+                return L10n.tr("Selected window is no longer available.")
             }
         }
     }
 
     static var permissionDeniedMessage: String {
-        "Screen Recording permission is required. Enable Captzo in System Settings → Privacy & Security "
-            + "→ Screen Recording. \(screenRecordingRestartHint)"
+        let format = L10n.tr("permission.denied.message")
+        return String(format: format, locale: L10n.currentLocale, screenRecordingRestartHint)
     }
 
     static var permissionRestartRequiredMessage: String {
-        "Screen Recording permission changed. \(screenRecordingRestartHint)"
+        String(
+            localized: "Screen Recording permission changed. \(screenRecordingRestartHint)",
+            locale: L10n.currentLocale
+        )
     }
 
     static func hasScreenCaptureAccess() -> Bool {

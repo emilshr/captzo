@@ -19,8 +19,9 @@ struct CaptureToolbarView: View {
                     .foregroundStyle(.white.opacity(0.45))
                     .frame(width: 20, height: Self.controlHeight)
                     .contentShape(Rectangle())
-                    .help("Drag to move toolbar")
-                    .appKitTooltip("Drag to move toolbar")
+                    .help(L10n.tr("Drag to move toolbar"))
+                    .appKitTooltip(L10n.tr("Drag to move toolbar"))
+                    .accessibilityLabel(L10n.tr("Drag to move toolbar"))
 
                 segmentTrack {
                     modeButton(.window)
@@ -44,8 +45,9 @@ struct CaptureToolbarView: View {
                     ),
                     labelStyle: .compact
                 )
-                .help("Aspect ratio")
-                .appKitTooltip("Aspect ratio")
+                .help(L10n.tr("Aspect ratio"))
+                .appKitTooltip(L10n.tr("Aspect ratio"))
+                .accessibilityLabel(L10n.tr("Aspect ratio"))
 
                 Spacer().frame(width: 8)
 
@@ -60,8 +62,9 @@ struct CaptureToolbarView: View {
                         .contentShape(Circle())
                 }
                 .buttonStyle(.plain)
-                .help("Capture")
-                .appKitTooltip("Capture")
+                .help(L10n.tr("Capture"))
+                .appKitTooltip(L10n.tr("Capture"))
+                .accessibilityLabel(L10n.tr("Capture"))
 
                 Button {
                     session.onCancel?()
@@ -74,8 +77,9 @@ struct CaptureToolbarView: View {
                         .contentShape(Circle())
                 }
                 .buttonStyle(.plain)
-                .help("Cancel (Esc)")
-                .appKitTooltip("Cancel (Esc)")
+                .help(L10n.tr("Cancel (Esc)"))
+                .appKitTooltip(L10n.tr("Cancel (Esc)"))
+                .accessibilityLabel(L10n.tr("Cancel (Esc)"))
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 12)
@@ -116,6 +120,7 @@ struct CaptureToolbarView: View {
         .buttonStyle(.plain)
         .help(mode.title)
         .appKitTooltip(mode.title)
+        .accessibilityLabel(mode.title)
     }
 
     @ViewBuilder
@@ -148,5 +153,6 @@ struct CaptureToolbarView: View {
         .buttonStyle(.plain)
         .help(option.displayName)
         .appKitTooltip(option.displayName)
+        .accessibilityLabel(option.displayName)
     }
 }

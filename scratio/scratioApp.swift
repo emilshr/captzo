@@ -5,16 +5,30 @@ import SwiftUI
 struct scratioApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @State private var appState = AppState.shared
+    @State private var languageStore: LanguageStore
+
+    init() {
+        let store = LanguageStore()
+        LanguageStore.install(store)
+        _languageStore = State(initialValue: store)
+        _appState = State(initialValue: AppState.shared)
+    }
 
     var body: some Scene {
+        let store = installedLanguageStore
+        let galleryTitle = store.tr("Gallery")
+        let newCaptureTitle = store.tr("New Capture")
+
         MenuBarExtra("Captzo", systemImage: "camera.viewfinder") {
             MenuBarContent()
                 .environment(appState)
+                .scratioLocalized(store)
         }
 
-        Window("Gallery", id: "gallery") {
+        Window(galleryTitle, id: "gallery") {
             GalleryView()
                 .environment(appState)
+                .scratioLocalized(store)
                 .frame(minWidth: 720, minHeight: 480)
                 .registerWindowRouter()
         }
@@ -23,7 +37,7 @@ struct scratioApp: App {
         .handlesExternalEvents(matching: Set(arrayLiteral: "gallery"))
         .commands {
             CommandGroup(replacing: .newItem) {
-                Button("New Capture") {
+                Button(newCaptureTitle) {
                     appState.startCapture()
                 }
                 .keyboardShortcut("n", modifiers: [.command])
@@ -33,10 +47,16 @@ struct scratioApp: App {
         Settings {
             SettingsView()
                 .environment(appState)
+                .scratioLocalized(store)
                 .registerWindowRouter()
         }
         .defaultSize(width: 560, height: 520)
         .windowResizability(.contentMinSize)
+    }
+
+    private var installedLanguageStore: LanguageStore {
+        LanguageStore.install(languageStore)
+        return languageStore
     }
 }
 

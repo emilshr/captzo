@@ -192,7 +192,7 @@ final class ScreenshotStore {
         var errorDescription: String? {
             switch self {
             case .encodeFailed:
-                return "Failed to encode screenshot as PNG."
+                return L10n.tr("Failed to encode screenshot as PNG.")
             }
         }
     }
