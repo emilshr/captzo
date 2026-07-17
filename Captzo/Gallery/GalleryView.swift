@@ -18,7 +18,7 @@ struct GalleryView: View {
             List(selection: $appState.selectedScreenshotIDs) {
                 Section("Library") {
                     ForEach(appState.filteredScreenshots) { shot in
-                        Text(shot.createdAt.scratioSidebarLabel())
+                        Text(shot.createdAt.captzoSidebarLabel())
                             .tag(shot.id)
                     }
                 }

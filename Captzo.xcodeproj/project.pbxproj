@@ -12,50 +12,50 @@
 			containerPortal = 20BA4A233006581C00560FBA /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = 20BA4A2A3006581C00560FBA;
-			remoteInfo = scratio;
+			remoteInfo = Captzo;
 		};
 		20BA4A433006581D00560FBA /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 20BA4A233006581C00560FBA /* Project object */;
 			proxyType = 1;
 			remoteGlobalIDString = 20BA4A2A3006581C00560FBA;
-			remoteInfo = scratio;
+			remoteInfo = Captzo;
 		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		20BA4A2B3006581C00560FBA /* Captzo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Captzo.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		20BA4A383006581D00560FBA /* scratioTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = scratioTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		20BA4A423006581D00560FBA /* scratioUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = scratioUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		20BA4A383006581D00560FBA /* CaptzoTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CaptzoTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		20BA4A423006581D00560FBA /* CaptzoUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = CaptzoUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		20BA4A2E3006581C00560FBA /* Exceptions for "scratio" folder in "scratio" target */ = {
+		20BA4A2E3006581C00560FBA /* Exceptions for "Captzo" folder in "Captzo" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
 			);
-			target = 20BA4A2A3006581C00560FBA /* scratio */;
+			target = 20BA4A2A3006581C00560FBA /* Captzo */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		20BA4A2D3006581C00560FBA /* scratio */ = {
+		20BA4A2D3006581C00560FBA /* Captzo */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				20BA4A2E3006581C00560FBA /* Exceptions for "scratio" folder in "scratio" target */,
+				20BA4A2E3006581C00560FBA /* Exceptions for "Captzo" folder in "Captzo" target */,
 			);
-			path = scratio;
+			path = Captzo;
 			sourceTree = "<group>";
 		};
-		20BA4A3B3006581D00560FBA /* scratioTests */ = {
+		20BA4A3B3006581D00560FBA /* CaptzoTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = scratioTests;
+			path = CaptzoTests;
 			sourceTree = "<group>";
 		};
-		20BA4A453006581D00560FBA /* scratioUITests */ = {
+		20BA4A453006581D00560FBA /* CaptzoUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = scratioUITests;
+			path = CaptzoUITests;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -88,9 +88,9 @@
 		20BA4A223006581C00560FBA = {
 			isa = PBXGroup;
 			children = (
-				20BA4A2D3006581C00560FBA /* scratio */,
-				20BA4A3B3006581D00560FBA /* scratioTests */,
-				20BA4A453006581D00560FBA /* scratioUITests */,
+				20BA4A2D3006581C00560FBA /* Captzo */,
+				20BA4A3B3006581D00560FBA /* CaptzoTests */,
+				20BA4A453006581D00560FBA /* CaptzoUITests */,
 				20BA4A2C3006581C00560FBA /* Products */,
 			);
 			sourceTree = "<group>";
@@ -99,8 +99,8 @@
 			isa = PBXGroup;
 			children = (
 				20BA4A2B3006581C00560FBA /* Captzo.app */,
-				20BA4A383006581D00560FBA /* scratioTests.xctest */,
-				20BA4A423006581D00560FBA /* scratioUITests.xctest */,
+				20BA4A383006581D00560FBA /* CaptzoTests.xctest */,
+				20BA4A423006581D00560FBA /* CaptzoUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -108,9 +108,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		20BA4A2A3006581C00560FBA /* scratio */ = {
+		20BA4A2A3006581C00560FBA /* Captzo */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 20BA4A4C3006581D00560FBA /* Build configuration list for PBXNativeTarget "scratio" */;
+			buildConfigurationList = 20BA4A4C3006581D00560FBA /* Build configuration list for PBXNativeTarget "Captzo" */;
 			buildPhases = (
 				20BA4A623006581D00560FBA /* SwiftLint */,
 				20BA4A273006581C00560FBA /* Sources */,
@@ -122,16 +122,16 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				20BA4A2D3006581C00560FBA /* scratio */,
+				20BA4A2D3006581C00560FBA /* Captzo */,
 			);
-			name = scratio;
+			name = Captzo;
 			productName = Captzo;
 			productReference = 20BA4A2B3006581C00560FBA /* Captzo.app */;
 			productType = "com.apple.product-type.application";
 		};
-		20BA4A373006581D00560FBA /* scratioTests */ = {
+		20BA4A373006581D00560FBA /* CaptzoTests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 20BA4A4F3006581D00560FBA /* Build configuration list for PBXNativeTarget "scratioTests" */;
+			buildConfigurationList = 20BA4A4F3006581D00560FBA /* Build configuration list for PBXNativeTarget "CaptzoTests" */;
 			buildPhases = (
 				20BA4A343006581D00560FBA /* Sources */,
 				20BA4A353006581D00560FBA /* Frameworks */,
@@ -143,18 +143,18 @@
 				20BA4A3A3006581D00560FBA /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				20BA4A3B3006581D00560FBA /* scratioTests */,
+				20BA4A3B3006581D00560FBA /* CaptzoTests */,
 			);
-			name = scratioTests;
+			name = CaptzoTests;
 			packageProductDependencies = (
 			);
-			productName = scratioTests;
-			productReference = 20BA4A383006581D00560FBA /* scratioTests.xctest */;
+			productName = CaptzoTests;
+			productReference = 20BA4A383006581D00560FBA /* CaptzoTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
 		};
-		20BA4A413006581D00560FBA /* scratioUITests */ = {
+		20BA4A413006581D00560FBA /* CaptzoUITests */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 20BA4A523006581D00560FBA /* Build configuration list for PBXNativeTarget "scratioUITests" */;
+			buildConfigurationList = 20BA4A523006581D00560FBA /* Build configuration list for PBXNativeTarget "CaptzoUITests" */;
 			buildPhases = (
 				20BA4A3E3006581D00560FBA /* Sources */,
 				20BA4A3F3006581D00560FBA /* Frameworks */,
@@ -166,13 +166,13 @@
 				20BA4A443006581D00560FBA /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
-				20BA4A453006581D00560FBA /* scratioUITests */,
+				20BA4A453006581D00560FBA /* CaptzoUITests */,
 			);
-			name = scratioUITests;
+			name = CaptzoUITests;
 			packageProductDependencies = (
 			);
-			productName = scratioUITests;
-			productReference = 20BA4A423006581D00560FBA /* scratioUITests.xctest */;
+			productName = CaptzoUITests;
+			productReference = 20BA4A423006581D00560FBA /* CaptzoUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
 /* End PBXNativeTarget section */
@@ -198,7 +198,7 @@
 					};
 				};
 			};
-			buildConfigurationList = 20BA4A263006581C00560FBA /* Build configuration list for PBXProject "scratio" */;
+			buildConfigurationList = 20BA4A263006581C00560FBA /* Build configuration list for PBXProject "Captzo" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -221,9 +221,9 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				20BA4A2A3006581C00560FBA /* scratio */,
-				20BA4A373006581D00560FBA /* scratioTests */,
-				20BA4A413006581D00560FBA /* scratioUITests */,
+				20BA4A2A3006581C00560FBA /* Captzo */,
+				20BA4A373006581D00560FBA /* CaptzoTests */,
+				20BA4A413006581D00560FBA /* CaptzoUITests */,
 			);
 		};
 /* End PBXProject section */
@@ -264,7 +264,7 @@
 			inputPaths = (
 				"$(SRCROOT)/.swiftlint.yml",
 				"$(SRCROOT)/.swiftlint.baseline",
-				"$(SRCROOT)/scratio",
+				"$(SRCROOT)/Captzo",
 			);
 			name = SwiftLint;
 			outputFileListPaths = (
@@ -273,7 +273,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "export PATH=\"/opt/homebrew/bin:$PATH\"\nif [ -x \"${SRCROOT}/scripts/swiftlint.sh\" ]; then\n  \"${SRCROOT}/scripts/swiftlint.sh\"\nelif command -v swiftlint >/dev/null; then\n  echo \"warning: scripts/swiftlint.sh missing; falling back to swiftlint without portable baseline.\"\n  cd \"${SRCROOT}\"\n  swiftlint lint --strict scratio\nelse\n  echo \"warning: SwiftLint not installed; run brew install swiftlint.\"\nfi\n";
+			shellScript = "export PATH=\"/opt/homebrew/bin:$PATH\"\nif [ -x \"${SRCROOT}/scripts/swiftlint.sh\" ]; then\n  \"${SRCROOT}/scripts/swiftlint.sh\"\nelif command -v swiftlint >/dev/null; then\n  echo \"warning: scripts/swiftlint.sh missing; falling back to swiftlint without portable baseline.\"\n  cd \"${SRCROOT}\"\n  swiftlint lint --strict Captzo\nelse\n  echo \"warning: SwiftLint not installed; run brew install swiftlint.\"\nfi\n";
 			showEnvVarsInLog = 0;
 		};
 /* End PBXShellScriptBuildPhase section */
@@ -305,12 +305,12 @@
 /* Begin PBXTargetDependency section */
 		20BA4A3A3006581D00560FBA /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 20BA4A2A3006581C00560FBA /* scratio */;
+			target = 20BA4A2A3006581C00560FBA /* Captzo */;
 			targetProxy = 20BA4A393006581D00560FBA /* PBXContainerItemProxy */;
 		};
 		20BA4A443006581D00560FBA /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
-			target = 20BA4A2A3006581C00560FBA /* scratio */;
+			target = 20BA4A2A3006581C00560FBA /* Captzo */;
 			targetProxy = 20BA4A433006581D00560FBA /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
@@ -447,7 +447,7 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = scratio/Info.plist;
+				INFOPLIST_FILE = Captzo/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Captzo;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
@@ -482,7 +482,7 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = scratio/Info.plist;
+				INFOPLIST_FILE = Captzo/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Captzo;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.utilities";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
@@ -558,7 +558,7 @@
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TEST_TARGET_NAME = scratio;
+				TEST_TARGET_NAME = Captzo;
 			};
 			name = Debug;
 		};
@@ -576,14 +576,14 @@
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TEST_TARGET_NAME = scratio;
+				TEST_TARGET_NAME = Captzo;
 			};
 			name = Release;
 		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		20BA4A263006581C00560FBA /* Build configuration list for PBXProject "scratio" */ = {
+		20BA4A263006581C00560FBA /* Build configuration list for PBXProject "Captzo" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				20BA4A4A3006581D00560FBA /* Debug */,
@@ -592,7 +592,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		20BA4A4C3006581D00560FBA /* Build configuration list for PBXNativeTarget "scratio" */ = {
+		20BA4A4C3006581D00560FBA /* Build configuration list for PBXNativeTarget "Captzo" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				20BA4A4D3006581D00560FBA /* Debug */,
@@ -601,7 +601,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		20BA4A4F3006581D00560FBA /* Build configuration list for PBXNativeTarget "scratioTests" */ = {
+		20BA4A4F3006581D00560FBA /* Build configuration list for PBXNativeTarget "CaptzoTests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				20BA4A503006581D00560FBA /* Debug */,
@@ -610,7 +610,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		20BA4A523006581D00560FBA /* Build configuration list for PBXNativeTarget "scratioUITests" */ = {
+		20BA4A523006581D00560FBA /* Build configuration list for PBXNativeTarget "CaptzoUITests" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				20BA4A533006581D00560FBA /* Debug */,

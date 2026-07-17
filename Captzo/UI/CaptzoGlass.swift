@@ -2,7 +2,7 @@ import SwiftUI
 
 extension View {
     @ViewBuilder
-    func scratioGlassBackground<S: Shape>(_ shape: S) -> some View {
+    func captzoGlassBackground<S: Shape>(_ shape: S) -> some View {
         if #available(macOS 26.0, *) {
             self
                 .clipShape(shape)
@@ -14,7 +14,7 @@ extension View {
     }
 
     @ViewBuilder
-    func scratioGlassContainer<Content: View>(
+    func captzoGlassContainer<Content: View>(
         spacing: CGFloat = 24,
         @ViewBuilder content: () -> Content
     ) -> some View {
@@ -28,7 +28,7 @@ extension View {
     }
 
     @ViewBuilder
-    func scratioGlassButtonStyle() -> some View {
+    func captzoGlassButtonStyle() -> some View {
         if #available(macOS 26.0, *) {
             self.buttonStyle(.glass)
         } else {
@@ -37,7 +37,7 @@ extension View {
     }
 
     @ViewBuilder
-    func scratioGlassProminentButtonStyle() -> some View {
+    func captzoGlassProminentButtonStyle() -> some View {
         if #available(macOS 26.0, *) {
             self.buttonStyle(.glassProminent)
         } else {

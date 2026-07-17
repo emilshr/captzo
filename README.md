@@ -1,4 +1,4 @@
-# Scratio
+# Captzo
 
 Menu-bar macOS app for screenshots with preset aspect ratios (16:9, 9:16, 1:1, and more). Captures copy to the clipboard and appear in an in-app gallery.
 
@@ -10,8 +10,8 @@ Menu-bar macOS app for screenshots with preset aspect ratios (16:9, 9:16, 1:1, a
 
 ## Quick start
 
-1. Open `scratio.xcodeproj` in Xcode
-2. Select the **scratio** scheme and **My Mac**
+1. Open `Captzo.xcodeproj` in Xcode
+2. Select the **Captzo** scheme and **My Mac**
 3. Press **⌘R** to run
 4. Use the menu bar camera icon → **New Capture**, or the default hotkey **⌘⇧6**
 
@@ -27,15 +27,15 @@ A local beginner guide (Swift for TypeScript developers, debug, build, architect
 - Toolbar selects mode/ratio without capturing; camera button / Return captures; Esc cancels
 - Gallery sorted by created date (newest first by default)
 - Configurable global hotkey in Settings
-- Storage: `~/Library/Application Support/scratio/Screenshots/`
+- Storage: `~/Library/Application Support/captzo/Screenshots/`
 
 ## Install with Homebrew
 
 After a notarized GitHub release exists and the tap is published:
 
 ```bash
-brew tap emilshr/scratio
-brew install --cask scratio
+brew tap emilshr/captzo
+brew install --cask captzo
 ```
 
 Then grant **Screen Recording** under System Settings → Privacy & Security.
@@ -55,17 +55,17 @@ That runs [`.github/workflows/release-dmg.yml`](.github/workflows/release-dmg.ym
 
 ```bash
 # Unit tests
-xcodebuild test -scheme scratio -destination 'platform=macOS' -only-testing:scratioTests
+xcodebuild test -scheme Captzo -destination 'platform=macOS' -only-testing:CaptzoTests
 ```
 
 ### Screen Recording permission (debugging)
 
-macOS ties Screen Recording to your app’s code signature and process. After granting or revoking permission, **quit Scratio and relaunch** (in Xcode: Stop, then Run again) before capture will work.
+macOS ties Screen Recording to your app’s code signature and process. After granting or revoking permission, **quit Captzo and relaunch** (in Xcode: Stop, then Run again) before capture will work.
 
 Recommended workflow:
 
 1. Use **Apple Development** signing with a stable team (not ad-hoc / “Sign to Run Locally”) so TCC remembers the app across builds.
 2. Grant Screen Recording once, Stop in Xcode, Run again, and leave the toggle on.
-3. To reset for testing: `tccutil reset ScreenCapture emilshr.scratio`, then Stop → Run → grant → Stop → Run again.
+3. To reset for testing: `tccutil reset ScreenCapture emilshr.captzo`, then Stop → Run → grant → Stop → Run again.
 
 Avoid repeatedly toggling the permission checkbox during a debug session; appearing in the list does not mean the current process has access.

@@ -6,17 +6,17 @@ cd "$ROOT_DIR"
 
 VERSION="${1:-}"
 if [[ -z "$VERSION" ]]; then
-  VERSION="$(xcodebuild -scheme scratio -showBuildSettings 2>/dev/null | awk -F' = ' '/MARKETING_VERSION/ { print $2; exit }')"
+  VERSION="$(xcodebuild -scheme Captzo -showBuildSettings 2>/dev/null | awk -F' = ' '/MARKETING_VERSION/ { print $2; exit }')"
 fi
 VERSION="${VERSION#v}"
 
 CONFIGURATION="${CONFIGURATION:-Release}"
 DERIVED_DATA="${DERIVED_DATA:-$ROOT_DIR/build/DerivedData}"
-ARCHIVE_PATH="${ARCHIVE_PATH:-$ROOT_DIR/build/Scratio.xcarchive}"
+ARCHIVE_PATH="${ARCHIVE_PATH:-$ROOT_DIR/build/Captzo.xcarchive}"
 EXPORT_PATH="${EXPORT_PATH:-$ROOT_DIR/build/export}"
 DMG_DIR="${DMG_DIR:-$ROOT_DIR/build/dmg}"
 STAGING="${DMG_DIR}/staging"
-DMG_PATH="${DMG_DIR}/Scratio-${VERSION}.dmg"
+DMG_PATH="${DMG_DIR}/Captzo-${VERSION}.dmg"
 
 mkdir -p "$DMG_DIR" "$EXPORT_PATH" "$(dirname "$ARCHIVE_PATH")"
 
@@ -31,9 +31,9 @@ if [[ -z "$CODE_SIGN_IDENTITY" ]]; then
   exit 1
 fi
 
-echo "==> Archiving Scratio ${VERSION} (${CONFIGURATION})"
+echo "==> Archiving Captzo ${VERSION} (${CONFIGURATION})"
 xcodebuild archive \
-  -scheme scratio \
+  -scheme Captzo \
   -configuration "$CONFIGURATION" \
   -archivePath "$ARCHIVE_PATH" \
   -derivedDataPath "$DERIVED_DATA" \
@@ -75,10 +75,10 @@ fi
 
 find_app() {
   local base="$1"
-  if [[ -d "$base/Scratio.app" ]]; then
-    echo "$base/Scratio.app"
-  elif [[ -d "$base/scratio.app" ]]; then
-    echo "$base/scratio.app"
+  if [[ -d "$base/Captzo.app" ]]; then
+    echo "$base/Captzo.app"
+  elif [[ -d "$base/captzo.app" ]]; then
+    echo "$base/captzo.app"
   else
     echo ""
   fi
@@ -90,23 +90,22 @@ if [[ -z "$APP_SRC" || ! -d "$APP_SRC" ]]; then
   exit 1
 fi
 
-echo "==> Staging Scratio.app and verifying signature"
+echo "==> Staging Captzo.app and verifying signature"
 rm -rf "$STAGING"
 mkdir -p "$STAGING"
-# Homebrew cask expects Scratio.app
-cp -R "$APP_SRC" "$STAGING/Scratio.app"
-# Re-sign after rename so the seal matches the shipped bundle name.
+# Homebrew cask expects Captzo.app
+cp -R "$APP_SRC" "$STAGING/Captzo.app"
 codesign --force --deep --options runtime --timestamp \
   --sign "$CODE_SIGN_IDENTITY" \
-  "$STAGING/Scratio.app"
-codesign --verify --deep --strict --verbose=2 "$STAGING/Scratio.app"
-spctl --assess --type execute --verbose=4 "$STAGING/Scratio.app" || true
+  "$STAGING/Captzo.app"
+codesign --verify --deep --strict --verbose=2 "$STAGING/Captzo.app"
+spctl --assess --type execute --verbose=4 "$STAGING/Captzo.app" || true
 ln -sf /Applications "$STAGING/Applications"
 
 echo "==> Creating DMG"
 rm -f "$DMG_PATH"
 hdiutil create \
-  -volname "Scratio" \
+  -volname "Captzo" \
   -srcfolder "$STAGING" \
   -ov \
   -format UDZO \

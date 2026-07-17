@@ -1,7 +1,7 @@
 import Foundation
 
 extension Date {
-    func scratioSidebarLabel(
+    func captzoSidebarLabel(
         referenceDate: Date = Date(),
         calendar: Calendar = .current,
         locale: Locale = L10n.currentLocale

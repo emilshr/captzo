@@ -17,8 +17,8 @@
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "20BA4A2A3006581C00560FBA"
                BuildableName = "Captzo.app"
-               BlueprintName = "scratio"
-               ReferencedContainer = "container:scratio.xcodeproj">
+               BlueprintName = "Captzo"
+               ReferencedContainer = "container:Captzo.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -36,9 +36,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "20BA4A373006581D00560FBA"
-               BuildableName = "scratioTests.xctest"
-               BlueprintName = "scratioTests"
-               ReferencedContainer = "container:scratio.xcodeproj">
+               BuildableName = "CaptzoTests.xctest"
+               BlueprintName = "CaptzoTests"
+               ReferencedContainer = "container:Captzo.xcodeproj">
             </BuildableReference>
          </TestableReference>
          <TestableReference
@@ -47,9 +47,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "20BA4A413006581D00560FBA"
-               BuildableName = "scratioUITests.xctest"
-               BlueprintName = "scratioUITests"
-               ReferencedContainer = "container:scratio.xcodeproj">
+               BuildableName = "CaptzoUITests.xctest"
+               BlueprintName = "CaptzoUITests"
+               ReferencedContainer = "container:Captzo.xcodeproj">
             </BuildableReference>
          </TestableReference>
       </Testables>
@@ -70,8 +70,8 @@
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "20BA4A2A3006581C00560FBA"
             BuildableName = "Captzo.app"
-            BlueprintName = "scratio"
-            ReferencedContainer = "container:scratio.xcodeproj">
+            BlueprintName = "Captzo"
+            ReferencedContainer = "container:Captzo.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -87,8 +87,8 @@
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "20BA4A2A3006581C00560FBA"
             BuildableName = "Captzo.app"
-            BlueprintName = "scratio"
-            ReferencedContainer = "container:scratio.xcodeproj">
+            BlueprintName = "Captzo"
+            ReferencedContainer = "container:Captzo.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

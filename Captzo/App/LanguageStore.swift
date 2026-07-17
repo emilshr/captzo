@@ -28,7 +28,7 @@ final class LanguageStore {
             AppPreferences.uiLanguage = preference
             revision += 1
             syncL10nOverride()
-            NotificationCenter.default.post(name: .scratioLanguageDidChange, object: nil)
+            NotificationCenter.default.post(name: .captzoLanguageDidChange, object: nil)
         }
     }
 
@@ -83,5 +83,5 @@ final class LanguageStore {
 }
 
 extension Notification.Name {
-    static let scratioLanguageDidChange = Notification.Name("captzo.languageDidChange")
+    static let captzoLanguageDidChange = Notification.Name("captzo.languageDidChange")
 }

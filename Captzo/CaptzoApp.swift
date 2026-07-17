@@ -2,7 +2,7 @@ import AppKit
 import SwiftUI
 
 @main
-struct scratioApp: App {
+struct CaptzoApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @State private var appState = AppState.shared
     @State private var languageStore: LanguageStore
@@ -22,13 +22,13 @@ struct scratioApp: App {
         MenuBarExtra("Captzo", systemImage: "camera.viewfinder") {
             MenuBarContent()
                 .environment(appState)
-                .scratioLocalized(store)
+                .captzoLocalized(store)
         }
 
         Window(galleryTitle, id: "gallery") {
             GalleryView()
                 .environment(appState)
-                .scratioLocalized(store)
+                .captzoLocalized(store)
                 .frame(minWidth: 720, minHeight: 480)
                 .registerWindowRouter()
         }
@@ -47,7 +47,7 @@ struct scratioApp: App {
         Settings {
             SettingsView()
                 .environment(appState)
-                .scratioLocalized(store)
+                .captzoLocalized(store)
                 .registerWindowRouter()
         }
         .defaultSize(width: 560, height: 520)

@@ -180,7 +180,7 @@ enum L10n {
 
 extension View {
     /// Injects language store + locale + layout direction for in-app language switching.
-    func scratioLocalized(_ store: LanguageStore) -> some View {
+    func captzoLocalized(_ store: LanguageStore) -> some View {
         environment(store)
             .environment(\.locale, store.resolvedLocale)
             .environment(\.layoutDirection, store.layoutDirection)
