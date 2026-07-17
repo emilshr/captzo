@@ -10,7 +10,7 @@ struct AspectRatioMenu: View {
     var isDisabled: Bool = false
 
     var body: some View {
-        Menu {
+        let menu = Menu {
             if includeAllOption {
                 Button {
                     onSelectAll?()
@@ -37,13 +37,28 @@ struct AspectRatioMenu: View {
         .labelStyle(.titleAndIcon)
         .disabled(isDisabled)
         .menuStyle(.borderlessButton)
+
+        // Apply chrome outside the Menu label — Menu often strips label backgrounds.
+        if labelStyle == .compact {
+            menu
+                .padding(.horizontal, 8)
+                .frame(height: 36)
+                .background(Color.black.opacity(0.28), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .strokeBorder(Color.white.opacity(0.2), lineWidth: 1)
+                )
+                .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        } else {
+            menu
+        }
     }
 
     @ViewBuilder
     private var labelContent: some View {
         switch labelStyle {
         case .compact:
-            HStack(spacing: 8) {
+            HStack(spacing: 6) {
                 if allSelected {
                     Image(systemName: "line.3.horizontal.decrease.circle")
                         .font(.system(size: 12, weight: .medium))
@@ -63,20 +78,10 @@ struct AspectRatioMenu: View {
                         .lineLimit(1)
                         .fixedSize(horizontal: true, vertical: false)
                 }
-                Spacer(minLength: 8)
                 Image(systemName: "chevron.up.chevron.down")
                     .font(.system(size: 9, weight: .semibold))
                     .foregroundStyle(.white.opacity(0.45))
             }
-            .padding(.horizontal, 10)
-            .frame(minWidth: 88)
-            .frame(height: 36)
-            .background(Color.black.opacity(0.28), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .strokeBorder(Color.white.opacity(0.2), lineWidth: 1)
-            )
-            .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         case .settings:
             HStack(spacing: 8) {
                 if allSelected {
