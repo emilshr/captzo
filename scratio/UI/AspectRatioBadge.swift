@@ -42,8 +42,7 @@ struct AspectRatioBadge: View {
 
 extension CapturedScreenshot {
     var aspectRatioOption: AspectRatioOption? {
-        guard let aspectRatioRaw else { return nil }
-        return AspectRatioOption(rawValue: aspectRatioRaw)
+        AspectRatioOption.fromPersisted(aspectRatioRaw)
     }
 
     var aspectRatioBadge: some View {

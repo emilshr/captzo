@@ -61,7 +61,9 @@ final class AppState {
 
     var filteredScreenshots: [CapturedScreenshot] {
         guard let aspectRatioFilter else { return screenshots }
-        return screenshots.filter { $0.aspectRatioRaw == aspectRatioFilter.rawValue }
+        return screenshots.filter { screenshot in
+            AspectRatioOption.fromPersisted(screenshot.aspectRatioRaw) == aspectRatioFilter
+        }
     }
 
     /// Drops selection entries that are hidden by the current aspect filter.

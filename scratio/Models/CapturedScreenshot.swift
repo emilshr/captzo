@@ -9,7 +9,7 @@ struct CapturedScreenshot: Identifiable, Hashable, Sendable {
     var filename: String { fileURL.lastPathComponent }
 
     var aspectRatioLabel: String {
-        aspectRatioRaw ?? "Unknown"
+        AspectRatioOption.fromPersisted(aspectRatioRaw)?.displayName ?? aspectRatioRaw ?? "Unknown"
     }
 }
 

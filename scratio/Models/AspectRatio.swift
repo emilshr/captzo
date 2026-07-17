@@ -11,13 +11,16 @@ enum AspectRatioOption: String, CaseIterable, Identifiable, Codable, Sendable {
     case threeToFour = "3:4"
     case threeToTwo = "3:2"
     case twoToThree = "2:3"
-    case independent = "Independent"
+    case freeform = "Freeform"
+
+    /// Legacy raw value used before the Freeform rename.
+    static let legacyIndependentRawValue = "Independent"
 
     var id: String { rawValue }
 
     var displayName: String { rawValue }
 
-    /// Width / height. `nil` means freeform (independent).
+    /// Width / height. `nil` means freeform (unlocked).
     var ratio: CGFloat? {
         switch self {
         case .oneToOne: return 1
@@ -27,7 +30,7 @@ enum AspectRatioOption: String, CaseIterable, Identifiable, Codable, Sendable {
         case .threeToFour: return 3 / 4
         case .threeToTwo: return 3 / 2
         case .twoToThree: return 2 / 3
-        case .independent: return nil
+        case .freeform: return nil
         }
     }
 
@@ -43,12 +46,24 @@ enum AspectRatioOption: String, CaseIterable, Identifiable, Codable, Sendable {
         case .threeToFour: return "EF476F"
         case .threeToTwo: return "00BBF9"
         case .twoToThree: return "FEE440"
-        case .independent: return "8E9AAF"
+        case .freeform: return "8E9AAF"
         }
     }
 
     var badgeColor: Color {
         Color(hex: AppPreferences.badgeColorHex(for: self) ?? defaultBadgeColorHex)
+    }
+
+    /// Decodes persisted strings, including the legacy `"Independent"` value.
+    static func fromPersisted(_ raw: String?) -> AspectRatioOption? {
+        guard let raw else { return nil }
+        if let option = AspectRatioOption(rawValue: raw) {
+            return option
+        }
+        if raw == legacyIndependentRawValue {
+            return .freeform
+        }
+        return nil
     }
 }
 

@@ -68,6 +68,9 @@ final class CaptureSessionState {
     func setAspectRatio(_ ratio: AspectRatioOption) {
         aspectRatio = ratio
         onAspectRatioChange?(ratio)
+        if mode == .window || mode == .display {
+            setMode(.selection)
+        }
         if ratio.isLocked, selectionRect.width > 0 {
             selectionRect = Self.clampSelection(selectionRect, aspectRatio: ratio)
         }
@@ -211,7 +214,7 @@ final class CaptureSessionState {
     }
 
     @MainActor
-    static func clampSelection(_ rect: CGRect, aspectRatio: AspectRatioOption = .independent) -> CGRect {
+    static func clampSelection(_ rect: CGRect, aspectRatio: AspectRatioOption = .freeform) -> CGRect {
         let screens = screenFrames()
         guard let ratio = aspectRatio.ratio, ratio > 0 else {
             return ScreenGeometry.clampRect(rect, toScreens: screens)

@@ -26,7 +26,7 @@ enum AppPreferences {
     static var aspectRatio: AspectRatioOption {
         get {
             let raw = defaults.string(forKey: aspectRatioKey) ?? AspectRatioOption.oneToOne.rawValue
-            return AspectRatioOption(rawValue: raw) ?? .oneToOne
+            return AspectRatioOption.fromPersisted(raw) ?? .oneToOne
         }
         set {
             defaults.set(newValue.rawValue, forKey: aspectRatioKey)
@@ -144,11 +144,22 @@ enum AppPreferences {
     }
 
     static func badgeColorHex(for option: AspectRatioOption) -> String? {
-        badgeColorOverrides()[option.rawValue]
+        let overrides = badgeColorOverrides()
+        if let hex = overrides[option.rawValue] {
+            return hex
+        }
+        // Migrate legacy Independent badge color key for Freeform.
+        if option == .freeform {
+            return overrides[AspectRatioOption.legacyIndependentRawValue]
+        }
+        return nil
     }
 
     static func setBadgeColorHex(_ hex: String?, for option: AspectRatioOption) {
         var overrides = badgeColorOverrides()
+        if option == .freeform {
+            overrides.removeValue(forKey: AspectRatioOption.legacyIndependentRawValue)
+        }
         if let hex, !hex.isEmpty {
             overrides[option.rawValue] = hex.uppercased()
         } else {
