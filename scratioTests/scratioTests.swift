@@ -9,9 +9,18 @@ struct AspectRatioTests {
         #expect(AspectRatioOption.oneToOne.ratio == 1)
     }
 
-    @Test func independentAspectRatioIsFreeform() {
-        #expect(AspectRatioOption.independent.isLocked == false)
-        #expect(AspectRatioOption.independent.ratio == nil)
+    @Test func freeformAspectRatioIsUnlocked() {
+        #expect(AspectRatioOption.freeform.isLocked == false)
+        #expect(AspectRatioOption.freeform.ratio == nil)
+        #expect(AspectRatioOption.freeform.rawValue == "Freeform")
+    }
+
+    @Test func fromPersistedMapsLegacyIndependentToFreeform() {
+        #expect(AspectRatioOption.fromPersisted("Independent") == .freeform)
+        #expect(AspectRatioOption.fromPersisted("Freeform") == .freeform)
+        #expect(AspectRatioOption.fromPersisted("1:1") == .oneToOne)
+        #expect(AspectRatioOption.fromPersisted(nil) == nil)
+        #expect(AspectRatioOption.fromPersisted("unknown") == nil)
     }
 
     @Test func constrainKeepsSixteenByNine() {
@@ -32,6 +41,33 @@ struct AspectRatioTests {
         let ratio = try #require(option.ratio)
         #expect(ratio > 0)
         #expect(option.isLocked)
+    }
+
+    @MainActor
+    @Test func setAspectRatioFromWindowModeSwitchesToSelection() {
+        let session = CaptureSessionState()
+        session.mode = .window
+        session.setAspectRatio(.sixteenToNine)
+        #expect(session.mode == .selection)
+        #expect(session.aspectRatio == .sixteenToNine)
+    }
+
+    @MainActor
+    @Test func setAspectRatioFromDisplayModeSwitchesToSelection() {
+        let session = CaptureSessionState()
+        session.mode = .display
+        session.setAspectRatio(.freeform)
+        #expect(session.mode == .selection)
+        #expect(session.aspectRatio == .freeform)
+    }
+
+    @MainActor
+    @Test func setAspectRatioInSelectionModeKeepsSelection() {
+        let session = CaptureSessionState()
+        session.mode = .selection
+        session.setAspectRatio(.nineToSixteen)
+        #expect(session.mode == .selection)
+        #expect(session.aspectRatio == .nineToSixteen)
     }
 }
 
@@ -198,6 +234,43 @@ struct AppPreferencesTests {
         let loaded = try #require(AppPreferences.toolbarOrigin)
         #expect(abs(loaded.x - point.x) < 0.001)
         #expect(abs(loaded.y - point.y) < 0.001)
+    }
+
+    @Test func aspectRatioMigratesLegacyIndependent() throws {
+        let suiteName = "captzo.tests.prefs.\(UUID().uuidString)"
+        let suite = try #require(UserDefaults(suiteName: suiteName))
+        defer {
+            suite.removePersistentDomain(forName: suiteName)
+            AppPreferences.defaults = .standard
+        }
+        AppPreferences.defaults = suite
+
+        suite.set(AspectRatioOption.legacyIndependentRawValue, forKey: AppPreferences.aspectRatioKey)
+        #expect(AppPreferences.aspectRatio == .freeform)
+
+        AppPreferences.aspectRatio = .freeform
+        #expect(suite.string(forKey: AppPreferences.aspectRatioKey) == "Freeform")
+    }
+
+    @Test func badgeColorReadsLegacyIndependentKey() throws {
+        let suiteName = "captzo.tests.prefs.\(UUID().uuidString)"
+        let suite = try #require(UserDefaults(suiteName: suiteName))
+        defer {
+            suite.removePersistentDomain(forName: suiteName)
+            AppPreferences.defaults = .standard
+        }
+        AppPreferences.defaults = suite
+
+        suite.set(
+            [AspectRatioOption.legacyIndependentRawValue: "AABBCC"],
+            forKey: AppPreferences.aspectRatioBadgeColorsKey
+        )
+        #expect(AppPreferences.badgeColorHex(for: .freeform) == "AABBCC")
+
+        AppPreferences.setBadgeColorHex("112233", for: .freeform)
+        let overrides = suite.dictionary(forKey: AppPreferences.aspectRatioBadgeColorsKey) as? [String: String]
+        #expect(overrides?["Freeform"] == "112233")
+        #expect(overrides?[AspectRatioOption.legacyIndependentRawValue] == nil)
     }
 }
 

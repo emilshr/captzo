@@ -42,11 +42,10 @@ struct CaptureToolbarView: View {
                         get: { session.aspectRatio },
                         set: { session.setAspectRatio($0) }
                     ),
-                    labelStyle: .compact,
-                    isDisabled: session.mode != .selection
+                    labelStyle: .compact
                 )
-                .help("Aspect ratio (selection mode)")
-                .appKitTooltip("Aspect ratio (selection mode)")
+                .help("Aspect ratio")
+                .appKitTooltip("Aspect ratio")
 
                 Spacer().frame(width: 8)
 
@@ -122,7 +121,6 @@ struct CaptureToolbarView: View {
     @ViewBuilder
     private func aspectRatioQuickToggle(_ option: AspectRatioOption) -> some View {
         let isSelected = session.aspectRatio == option
-        let isEnabled = session.mode == .selection
         let shape = RoundedRectangle(cornerRadius: Self.controlCorner, style: .continuous)
         Button {
             session.setAspectRatio(option)
@@ -148,8 +146,6 @@ struct CaptureToolbarView: View {
             .contentShape(shape)
         }
         .buttonStyle(.plain)
-        .disabled(!isEnabled)
-        .opacity(isEnabled ? 1 : 0.4)
         .help(option.displayName)
         .appKitTooltip(option.displayName)
     }
