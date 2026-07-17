@@ -3,6 +3,7 @@ import SwiftUI
 
 struct GalleryView: View {
     @Environment(AppState.self) private var appState
+    @Environment(LanguageStore.self) private var languageStore
     @Environment(\.openSettings) private var openSettings
 
     private let columns = [
@@ -11,6 +12,7 @@ struct GalleryView: View {
 
     var body: some View {
         @Bindable var appState = appState
+        let languageCode = languageStore.resolvedLanguageCode
 
         NavigationSplitView {
             List(selection: $appState.selectedScreenshotIDs) {
@@ -21,6 +23,7 @@ struct GalleryView: View {
                     }
                 }
             }
+            .id(languageCode)
             .navigationSplitViewColumnWidth(min: 180, ideal: 220)
             .safeAreaInset(edge: .bottom) {
                 VStack(spacing: 8) {
@@ -65,7 +68,7 @@ struct GalleryView: View {
             Text(appState.permissionAlertMessage)
         }
         .alert(
-            "Delete \(appState.selectedScreenshotIDs.count) Screenshots?",
+            Text("Delete \(appState.selectedScreenshotIDs.count) Screenshots?"),
             isPresented: $appState.showDeleteConfirmation
         ) {
             Button("Delete", role: .destructive) {
@@ -79,6 +82,10 @@ struct GalleryView: View {
             await appState.reloadScreenshots()
             appState.refreshScreenRecordingPermission()
             NSApp.setActivationPolicy(.regular)
+            updateGalleryWindowTitle()
+        }
+        .onChange(of: languageCode) { _, _ in
+            updateGalleryWindowTitle()
         }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             appState.refreshScreenRecordingPermission()
@@ -87,6 +94,32 @@ struct GalleryView: View {
             openSettings()
         }
     }
+
+    private func updateGalleryWindowTitle() {
+        let title = L10n.tr("Gallery")
+        for window in NSApp.windows {
+            if window.identifier?.rawValue == "gallery" {
+                window.title = title
+                continue
+            }
+            // SwiftUI may not set identifier; match known Gallery titles across locales.
+            if Self.galleryWindowTitles.contains(window.title) {
+                window.title = title
+            }
+        }
+    }
+
+    private static let galleryWindowTitles: Set<String> = [
+        "Gallery",
+        "Galería",
+        "图库",
+        "ギャラリー",
+        "Galerie",
+        "갤러리",
+        "معرض الصور",
+        "गैलरी",
+        "Galeria"
+    ]
 
     private var permissionBanner: some View {
         HStack(alignment: .top, spacing: 12) {
@@ -97,11 +130,7 @@ struct GalleryView: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Screen Recording permission required")
                     .font(.headline)
-                Text(
-                    "Without this permission the capture overlay cannot work. "
-                        + "Enable Captzo in System Settings → Privacy & Security → Screen Recording, "
-                        + "then quit and relaunch Captzo."
-                )
+                Text(L10n.tr("permission.banner.body"))
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)

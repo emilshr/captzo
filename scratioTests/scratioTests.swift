@@ -568,3 +568,144 @@ struct GalleryFilterSelectionTests {
         #expect(state.lastSelectedScreenshotID == visible.id)
     }
 }
+
+struct AppLanguageResolverTests {
+    private static let allBundled = AppLanguagePreference.bundledLanguageCodes + ["Base"]
+
+    @Test func systemMatchesPreferredLanguage() {
+        let code = AppLanguageResolver.resolveLanguageCode(
+            preference: .system,
+            preferredLanguageCodes: ["es-ES", "en-US"],
+            availableLocalizations: ["en", "es", "Base"]
+        )
+        #expect(code == "es")
+    }
+
+    @Test func systemFallsBackToEnglish() {
+        let code = AppLanguageResolver.resolveLanguageCode(
+            preference: .system,
+            preferredLanguageCodes: ["sv-SE", "fi-FI"],
+            availableLocalizations: ["en", "es", "Base"]
+        )
+        #expect(code == "en")
+    }
+
+    @Test func systemMatchesChineseSimplified() {
+        let code = AppLanguageResolver.resolveLanguageCode(
+            preference: .system,
+            preferredLanguageCodes: ["zh-Hans-CN", "en"],
+            availableLocalizations: Self.allBundled
+        )
+        #expect(code == "zh-Hans")
+    }
+
+    @Test func systemMatchesPortugueseBrazil() {
+        let code = AppLanguageResolver.resolveLanguageCode(
+            preference: .system,
+            preferredLanguageCodes: ["pt-BR", "en"],
+            availableLocalizations: Self.allBundled
+        )
+        #expect(code == "pt-BR")
+    }
+
+    @Test func explicitSpanishForcesSpanish() {
+        let code = AppLanguageResolver.resolveLanguageCode(
+            preference: .spanish,
+            preferredLanguageCodes: ["en-US"],
+            availableLocalizations: ["en", "es", "Base"]
+        )
+        #expect(code == "es")
+    }
+
+    @Test func explicitEnglishForcesEnglish() {
+        let code = AppLanguageResolver.resolveLanguageCode(
+            preference: .english,
+            preferredLanguageCodes: ["es-MX"],
+            availableLocalizations: ["en", "es", "Base"]
+        )
+        #expect(code == "en")
+    }
+
+    @Test func explicitArabicForcesArabic() {
+        let code = AppLanguageResolver.resolveLanguageCode(
+            preference: .arabic,
+            preferredLanguageCodes: ["en"],
+            availableLocalizations: Self.allBundled
+        )
+        #expect(code == "ar")
+    }
+
+    @Test func spanishUnavailableFallsBackToEnglish() {
+        let code = AppLanguageResolver.resolveLanguageCode(
+            preference: .spanish,
+            preferredLanguageCodes: ["es"],
+            availableLocalizations: ["en", "Base"]
+        )
+        #expect(code == "en")
+    }
+
+    @Test func englishMissingUsesSortedFallback() {
+        let code = AppLanguageResolver.resolveLanguageCode(
+            preference: .english,
+            preferredLanguageCodes: ["en"],
+            availableLocalizations: ["es", "de", "Base"]
+        )
+        #expect(code == "de")
+    }
+
+    @Test func matchesLanguagePrefix() {
+        let code = AppLanguageResolver.resolveLanguageCode(
+            preference: .system,
+            preferredLanguageCodes: ["en-GB"],
+            availableLocalizations: ["en", "es"]
+        )
+        #expect(code == "en")
+    }
+
+    @Test func shipsTenBundledLanguages() {
+        #expect(AppLanguagePreference.bundledLanguageCodes.count == 10)
+        #expect(AppLanguagePreference.explicitLanguages.count == 10)
+    }
+}
+
+extension AppPreferencesTests {
+    @Test func uiLanguageRoundTripDefaultsToSystem() throws {
+        let suiteName = "captzo.tests.prefs.lang.\(UUID().uuidString)"
+        let suite = try #require(UserDefaults(suiteName: suiteName))
+        defer {
+            suite.removePersistentDomain(forName: suiteName)
+            AppPreferences.defaults = .standard
+        }
+        AppPreferences.defaults = suite
+
+        #expect(AppPreferences.uiLanguage == .system)
+        AppPreferences.uiLanguage = .spanish
+        #expect(AppPreferences.uiLanguage == .spanish)
+        AppPreferences.uiLanguage = .chineseSimplified
+        #expect(AppPreferences.uiLanguage == .chineseSimplified)
+        AppPreferences.uiLanguage = .portugueseBrazil
+        #expect(AppPreferences.uiLanguage == .portugueseBrazil)
+        AppPreferences.uiLanguage = .english
+        #expect(AppPreferences.uiLanguage == .english)
+        AppPreferences.uiLanguage = .system
+        #expect(AppPreferences.uiLanguage == .system)
+    }
+
+    @Test func clipboardToastDefaultIsEmptySentinel() throws {
+        let suiteName = "captzo.tests.prefs.toast.\(UUID().uuidString)"
+        let suite = try #require(UserDefaults(suiteName: suiteName))
+        defer {
+            suite.removePersistentDomain(forName: suiteName)
+            AppPreferences.defaults = .standard
+        }
+        AppPreferences.defaults = suite
+
+        #expect(AppPreferences.usesDefaultClipboardToastMessage)
+        #expect(AppPreferences.clipboardToastMessage.isEmpty)
+        AppPreferences.clipboardToastMessage = "Custom toast"
+        #expect(!AppPreferences.usesDefaultClipboardToastMessage)
+        #expect(AppPreferences.clipboardToastMessage == "Custom toast")
+        AppPreferences.clipboardToastMessage = ""
+        #expect(AppPreferences.usesDefaultClipboardToastMessage)
+    }
+}

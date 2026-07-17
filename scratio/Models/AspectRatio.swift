@@ -18,7 +18,14 @@ enum AspectRatioOption: String, CaseIterable, Identifiable, Codable, Sendable {
 
     var id: String { rawValue }
 
-    var displayName: String { rawValue }
+    var displayName: String {
+        switch self {
+        case .freeform:
+            return L10n.tr("Freeform")
+        default:
+            return rawValue
+        }
+    }
 
     /// Width / height. `nil` means freeform (unlocked).
     var ratio: CGFloat? {
@@ -76,9 +83,9 @@ enum CaptureMode: String, CaseIterable, Identifiable, Sendable {
 
     var title: String {
         switch self {
-        case .selection: return "Selection"
-        case .window: return "Window"
-        case .display: return "Entire Screen"
+        case .selection: return L10n.tr("Selection")
+        case .window: return L10n.tr("Window")
+        case .display: return L10n.tr("Entire Screen")
         }
     }
 
@@ -99,8 +106,8 @@ enum GallerySortOrder: String, CaseIterable, Identifiable, Sendable {
 
     var title: String {
         switch self {
-        case .newestFirst: return "Newest First"
-        case .oldestFirst: return "Oldest First"
+        case .newestFirst: return L10n.tr("Newest First")
+        case .oldestFirst: return L10n.tr("Oldest First")
         }
     }
 }

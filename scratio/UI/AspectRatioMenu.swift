@@ -15,7 +15,7 @@ struct AspectRatioMenu: View {
                 Button {
                     onSelectAll?()
                 } label: {
-                    menuRow(title: "All", option: nil, isSelected: allSelected)
+                    menuRow(title: L10n.tr("All"), option: nil, isSelected: allSelected)
                 }
                 Divider()
             }
@@ -63,7 +63,7 @@ struct AspectRatioMenu: View {
                     Image(systemName: "line.3.horizontal.decrease.circle")
                         .font(.system(size: 12, weight: .medium))
                         .foregroundStyle(.white.opacity(0.9))
-                    Text("All")
+                    Text(L10n.tr("All"))
                         .font(.system(size: 12, weight: .medium))
                         .foregroundStyle(.white.opacity(0.9))
                 } else {
@@ -85,7 +85,7 @@ struct AspectRatioMenu: View {
         case .settings:
             HStack(spacing: 8) {
                 if allSelected {
-                    Text("All")
+                    Text(L10n.tr("All"))
                 } else {
                     AspectRatioGlyph(option: selection, size: 16, color: selection.badgeColor)
                     Text(selection.displayName)
@@ -99,7 +99,7 @@ struct AspectRatioMenu: View {
             HStack(spacing: 6) {
                 Image(systemName: "line.3.horizontal.decrease.circle")
                 if allSelected {
-                    Text("All Ratios")
+                    Text(L10n.tr("All Ratios"))
                 } else {
                     AspectRatioGlyph(option: selection, size: 12, color: selection.badgeColor)
                     Text(selection.displayName)
@@ -151,6 +151,7 @@ struct AspectRatioFilterMenu: View {
             onSelectAll: { filter = nil },
             labelStyle: .toolbarFilter
         )
-        .help("Filter by aspect ratio")
+        .help(L10n.tr("Filter by aspect ratio"))
+        .accessibilityLabel(L10n.tr("Filter by aspect ratio"))
     }
 }
